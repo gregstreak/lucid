@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lucid">
+<meta name="theme-color" content="#1A6B54">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Lucid</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal-light: #F0F8F6;
+  --teal-mid: #C5E8DF;
+  --teal: #2A9D7C;
+  --teal-dark: #1A6B54;
+  --teal-deeper: #0F4A38;
+  --warm-white: #F5F2EC;
+  --warm-white-2: #EDE9E1;
+  --dawn: #E8A87C;
+  --dawn-dark: #C47A4A;
+  --dawn-light: #FDF4EE;
+  --coral: #D85A30;
+  --coral-light: #FAECE7;
+  --text-dark: #2D3A35;
+  --text-mid: #5A6B65;
+  --text-light: #8A9E97;
+  --border: rgba(42,157,124,0.15);
+  --border-mid: rgba(42,157,124,0.25);
+  --card-bg: #FFFFFF;
+  --font-serif: 'EB Garamond', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--warm-white);
+  color: var(--text-dark);
+  min-height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden;
+}
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+.ob-screen { display: none; min-height: 100vh; padding: 1.5rem 1.25rem 6rem; }
+.ob-screen.active { display: block; }
+
+/* NAV */
+.app-nav {
+  display: none;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.25rem;
+}
+.app-nav.visible { display: flex; align-items: center; gap: 0; }
+.nav-logo { display: flex; align-items: center; gap: 8px; padding: 10px 0; margin-right: auto; }
+.nav-logo-text { font-family: var(--font-serif); font-size: 18px; font-weight: 300; letter-spacing: .15em; color: var(--teal-dark); }
+.nav-btn {
+  flex: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 400;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-light);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all .2s;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+}
+.nav-btn.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
+.nav-settings { padding: 10px 0 10px 8px; background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 16px; }
+
+/* MAIN SCREENS */
+.main-screen { display: none; padding: 1.25rem 1.25rem 5rem; }
+.main-screen.active { display: block; }
+
+/* WELCOME */
+.welcome-wrap { padding: 2rem 1.5rem 3rem; min-height: 100vh; display: flex; flex-direction: column; }
+.welcome-icon-wrap { display: flex; justify-content: center; margin-bottom: 2rem; margin-top: 2rem; }
+.welcome-icon {
+  width: 100px; height: 100px; border-radius: 24px;
+  background: var(--teal-dark);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px rgba(26,107,84,0.25);
+}
+.welcome-wordmark { font-family: var(--font-serif); font-size: 32px; font-weight: 300; letter-spacing: .2em; color: var(--teal-dark); text-align: center; margin-bottom: .5rem; }
+.welcome-tagline { font-size: 13px; color: var(--text-light); text-align: center; letter-spacing: .05em; margin-bottom: 2.5rem; }
+.welcome-headline { font-size: 22px; font-weight: 400; color: var(--text-dark); line-height: 1.4; margin-bottom: 1rem; font-family: var(--font-serif); }
+.welcome-body { font-size: 14px; color: var(--text-mid); line-height: 1.8; margin-bottom: 2rem; }
+.welcome-footer { margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; }
+.welcome-footer-text { font-size: 12px; color: var(--text-light); line-height: 1.7; font-style: italic; }
+
+/* BUTTONS */
+.btn-primary {
+  width: 100%; padding: 14px; border-radius: var(--radius-md);
+  border: none; background: var(--teal-dark); color: white;
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-sans); margin-bottom: .75rem;
+  transition: background .2s;
+}
+.btn-primary:active { background: var(--teal-deeper); }
+.btn-secondary {
+  width: 100%; padding: 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--border-mid); background: none;
+  font-size: 14px; cursor: pointer; color: var(--text-mid);
+  font-family: var(--font-sans); margin-bottom: .5rem;
+  transition: background .2s;
+}
+.btn-secondary:active { background: var(--teal-light); }
+.btn-dawn {
+  width: 100%; padding: 14px; border-radius: var(--radius-md);
+  border: none; background: var(--dawn-dark); color: white;
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-sans); margin-bottom: .75rem;
+}
+
+/* CARDS */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: .75rem;
+}
+.card-teal { background: var(--teal-light); border-color: var(--teal-mid); }
+.card-dawn { background: var(--dawn-light); border-color: #E8C4A4; }
+.card-coral { background: var(--coral-light); border-color: #F0997B; }
+
+/* SECTION LABELS */
+.section-label {
+  font-size: 10px; font-weight: 500; color: var(--text-light);
+  text-transform: uppercase; letter-spacing: .1em;
+  margin: 1.25rem 0 .6rem;
+}
+.section-note { font-size: 12px; color: var(--text-light); margin: -.3rem 0 .6rem; line-height: 1.5; }
+
+/* ROWS */
+.row { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.row:last-child { border-bottom: none; padding-bottom: 0; }
+.row:first-child { padding-top: 0; }
+.row-left { flex: 1; min-width: 0; }
+.row-label { font-size: 14px; color: var(--text-dark); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.row-sub { font-size: 12px; color: var(--text-light); margin-top: 2px; line-height: 1.5; }
+
+/* TOGGLE */
+.toggle { width: 38px; height: 22px; border-radius: 11px; background: var(--warm-white-2); border: none; cursor: pointer; position: relative; transition: background .25s; flex-shrink: 0; margin-top: 1px; }
+.toggle.on { background: var(--teal); }
+.toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: transform .25s; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.toggle.on::after { transform: translateX(16px); }
+
+/* COUNTER */
+.counter-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.counter-row:last-child { border-bottom: none; }
+.counter-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.counter-btn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-mid); background: var(--warm-white); font-size: 16px; cursor: pointer; color: var(--teal-dark); display: flex; align-items: center; justify-content: center; font-family: var(--font-sans); }
+.counter-val { font-size: 15px; font-weight: 500; min-width: 24px; text-align: center; color: var(--text-dark); }
+
+/* INFO */
+.info-btn { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border-mid); background: var(--warm-white); font-size: 10px; cursor: pointer; color: var(--text-light); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-style: italic; font-family: Georgia, serif; }
+.info-panel { display: none; background: var(--teal-light); border: 1px solid var(--teal-mid); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 6px; font-size: 12px; color: var(--teal-deeper); line-height: 1.6; }
+.info-panel.open { display: block; }
+
+/* FLAGS */
+.flag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.flag-btn { padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--warm-white); font-size: 13px; cursor: pointer; color: var(--text-mid); text-align: left; transition: all .15s; line-height: 1.4; font-family: var(--font-sans); }
+.flag-btn.selected { background: var(--coral-light); border-color: var(--coral); color: #712B13; }
+.flag-btn.selected-teal { background: var(--teal-light); border-color: var(--teal); color: var(--teal-deeper); }
+
+/* GAP BUTTONS */
+.gap-btn { padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--warm-white); font-size: 13px; cursor: pointer; color: var(--text-mid); text-align: center; transition: all .15s; font-family: var(--font-sans); }
+.gap-btn.selected { background: var(--teal-dark); color: white; border-color: var(--teal-dark); }
+.gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* SEVERITY */
+.sev-row { display: flex; gap: 4px; }
+.sev-btn { flex: 1; height: 34px; border-radius: 6px; border: 1px solid var(--border); background: var(--warm-white); font-size: 12px; cursor: pointer; color: var(--text-mid); transition: all .15s; font-family: var(--font-sans); }
+.sev-btn.s1.sel,.sev-btn.s2.sel,.sev-btn.s3.sel { background: #F0997B; border-color: var(--coral); color: #712B13; }
+.sev-btn.s4.sel,.sev-btn.s5.sel,.sev-btn.s6.sel { background: var(--coral); border-color: #993C1D; color: white; }
+.sev-btn.s7.sel,.sev-btn.s8.sel,.sev-btn.s9.sel,.sev-btn.s10.sel { background: #993C1D; border-color: #712B13; color: white; }
+
+/* INPUTS */
+.input-field { width: 100%; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--warm-white); font-size: 14px; color: var(--text-dark); font-family: var(--font-sans); outline: none; }
+.input-field:focus { border-color: var(--teal); }
+.select-field { width: 100%; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--warm-white); font-size: 14px; color: var(--text-dark); font-family: var(--font-sans); outline: none; }
+.textarea-field { width: 100%; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--warm-white); font-size: 13px; color: var(--text-dark); font-family: var(--font-sans); resize: none; line-height: 1.5; outline: none; }
+.temp-input { width: 76px; padding: 7px 9px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--warm-white); font-size: 14px; color: var(--text-dark); font-family: var(--font-sans); text-align: center; outline: none; }
+
+/* TAGS */
+.tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: 500; }
+.tag-caffeine { background: #FAEEDA; color: #854F0B; }
+.tag-free { background: var(--teal-light); color: var(--teal-deeper); }
+
+/* STAT CARDS */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+.stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; }
+.stat-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
+.stat-value { font-size: 24px; font-weight: 500; color: var(--text-dark); font-family: var(--font-serif); }
+.stat-sub { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.stat-up { color: var(--teal); }
+.stat-down { color: var(--coral); }
+
+/* CALENDAR */
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: .5rem; }
+.cal-day { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text-light); background: var(--warm-white-2); }
+.cal-day.clean { background: var(--teal-light); color: var(--teal-deeper); }
+.cal-day.near { background: var(--dawn-light); color: var(--dawn-dark); }
+.cal-day.migraine { background: var(--coral); color: white; font-weight: 500; }
+.cal-day.today { outline: 2px solid var(--teal); outline-offset: -1px; }
+.cal-day.empty { background: none; }
+
+/* STREAK */
+.streak-bar { display: flex; gap: 4px; margin-bottom: .5rem; }
+.streak-day { flex: 1; height: 30px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.streak-day.done { background: var(--teal); color: white; }
+.streak-day.miss { background: var(--warm-white-2); color: var(--text-light); }
+.streak-day.migraine { background: var(--coral); color: white; }
+.streak-day.today { outline: 2px solid var(--teal-dark); outline-offset: -1px; }
+
+/* EVENTS */
+.event-item { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.event-item:last-child { border-bottom: none; }
+.event-time { font-size: 11px; color: var(--text-light); }
+.event-title { font-size: 14px; color: var(--text-dark); margin: 3px 0; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 8px; }
+.badge-migraine { background: var(--coral-light); color: #712B13; }
+.badge-pre { background: var(--dawn-light); color: var(--dawn-dark); }
+.badge-resolved { background: var(--teal-light); color: var(--teal-deeper); }
+
+/* ANALYSIS CARD */
+.analysis-card { background: var(--dawn-light); border: 1px solid #E8C4A4; border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: .75rem; }
+.analysis-title { font-size: 13px; font-weight: 500; color: var(--dawn-dark); margin-bottom: 6px; }
+.analysis-body { font-size: 13px; color: #8A4A20; line-height: 1.7; }
+.analysis-meta { font-size: 11px; color: var(--dawn); margin-top: 8px; }
+
+/* PROGRESS */
+.progress-bg { height: 6px; background: var(--warm-white-2); border-radius: 3px; }
+.progress-fill { height: 6px; border-radius: 3px; background: var(--teal); transition: width .5s ease; }
+
+/* PRESSURE CARD */
+.pressure-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: .75rem; }
+.pressure-value { font-size: 32px; font-weight: 300; color: var(--text-dark); font-family: var(--font-serif); }
+.pressure-unit { font-size: 14px; color: var(--text-light); margin-left: 4px; }
+.pressure-trend { font-size: 12px; padding: 3px 10px; border-radius: 8px; display: inline-block; margin-top: 4px; }
+.trend-stable { background: var(--teal-light); color: var(--teal-deeper); }
+.trend-falling { background: var(--dawn-light); color: var(--dawn-dark); }
+.trend-rising { background: var(--teal-light); color: var(--teal-deeper); }
+.trend-rapid { background: var(--coral-light); color: #712B13; }
+
+/* FOOD EXPAND */
+.food-expand-btn { width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px dashed var(--border-mid); background: none; font-size: 13px; cursor: pointer; color: var(--text-light); text-align: center; margin-top: 4px; font-family: var(--font-sans); }
+.food-detail { display: none; margin-top: 10px; }
+.food-detail.open { display: block; }
+.food-label { font-size: 12px; color: var(--text-light); margin-bottom: 4px; }
+.food-row { margin-bottom: 10px; }
+
+/* ONBOARDING */
+.ob-progress { display: flex; gap: 6px; margin-bottom: 1.75rem; }
+.ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warm-white-2); }
+.ob-dot.active { background: var(--teal-dark); }
+.ob-dot.done { background: var(--teal); }
+.ob-title { font-size: 22px; font-weight: 300; color: var(--text-dark); margin-bottom: .4rem; font-family: var(--font-serif); }
+.ob-sub { font-size: 13px; color: var(--text-light); margin-bottom: 1.25rem; line-height: 1.5; }
+
+/* SUPP LIST */
+.supp-item { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.supp-item:last-child { border-bottom: none; }
+.supp-name { font-size: 14px; color: var(--text-dark); }
+.supp-dose { font-size: 12px; color: var(--text-light); }
+.remove-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border); background: none; cursor: pointer; color: var(--text-light); font-size: 14px; display: flex; align-items: center; justify-content: center; }
+
+/* EXPECT ITEMS */
+.expect-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.expect-item:last-child { border-bottom: none; }
+.expect-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; margin-top: 1px; }
+.expect-title { font-size: 14px; color: var(--text-dark); margin-bottom: 3px; font-weight: 500; }
+.expect-text { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
+
+/* DOCTOR REPORT */
+.report-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
+.report-logo { width: 32px; height: 32px; border-radius: 8px; background: var(--teal-dark); display: flex; align-items: center; justify-content: center; }
+.report-title-text { font-family: var(--font-serif); font-size: 18px; font-weight: 300; letter-spacing: .1em; color: var(--teal-dark); }
+.report-subtitle { font-size: 12px; color: var(--text-light); }
+.report-section { margin-bottom: 1.25rem; }
+.report-section-title { font-size: 11px; font-weight: 500; color: var(--text-light); text-transform: uppercase; letter-spacing: .1em; margin-bottom: .6rem; padding-bottom: .4rem; border-bottom: 1px solid var(--border); }
+.report-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.report-row:last-child { border-bottom: none; }
+.report-key { color: var(--text-mid); }
+.report-val { color: var(--text-dark); font-weight: 500; }
+.report-note { font-size: 12px; color: var(--text-light); line-height: 1.6; margin-top: .5rem; font-style: italic; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--teal-dark); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; pointer-events: none; z-index: 200; transition: all .3s; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* SKIP BAR */
+.skip-bar { display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 1.25rem; background: var(--teal-light); border-bottom: 1px solid var(--teal-mid); }
+.skip-btn { font-size: 10px; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--teal-mid); background: white; cursor: pointer; color: var(--teal-deeper); font-family: var(--font-sans); }
+
+/* DATE LABEL */
+.today-date { font-size: 12px; color: var(--text-light); margin-bottom: 1.25rem; }
+
+/* PRESSURE MINI CHART */
+.pressure-bars { display: flex; align-items: flex-end; gap: 3px; height: 32px; margin-top: 8px; }
+.pressure-bar { flex: 1; border-radius: 2px; background: var(--teal-mid); min-height: 4px; transition: height .3s; }
+.pressure-bar.low { background: var(--dawn); }
+
+/* MIGRATE WARNING */
+.migrate-card { background: var(--dawn-light); border: 1px solid #E8C4A4; border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: .75rem; font-size: 13px; color: #8A4A20; line-height: 1.6; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --warm-white: #1E2420;
+    --warm-white-2: #252D29;
+    --card-bg: #1E2420;
+    --text-dark: #E8F0EC;
+    --text-mid: #9AB0A8;
+    --text-light: #6A8A80;
+    --border: rgba(42,157,124,0.2);
+    --border-mid: rgba(42,157,124,0.3);
+    --teal-light: #0D2820;
+    --teal-mid: #1A4A38;
+    --dawn-light: #2A1E14;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- SKIP BAR (dev only) -->
+<div class="skip-bar" id="skip-bar">
+  <span style="font-size:10px;color:var(--teal-deeper);align-self:center;font-weight:500">Jump to:</span>
+  <button class="skip-btn" onclick="showScreen('welcome1')">Welcome</button>
+  <button class="skip-btn" onclick="showScreen('welcome2')">Expectations</button>
+  <button class="skip-btn" onclick="showOb(1)">Onboarding</button>
+  <button class="skip-btn" onclick="launchApp('log')">Daily log</button>
+  <button class="skip-btn" onclick="launchApp('event')">Log event</button>
+  <button class="skip-btn" onclick="launchApp('dash')">Dashboard</button>
+  <button class="skip-btn" onclick="launchApp('report')">Report</button>
+</div>
+
+<!-- NAV -->
+<nav class="app-nav" id="app-nav">
+  <div class="nav-logo">
+    <svg width="20" height="20" viewBox="0 0 72 72" fill="none">
+      <line x1="8" y1="50" x2="64" y2="50" stroke="#2A9D7C" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+      <path d="M8 50 L16 40 L23 46 L32 24 L41 38 L48 32 L56 44 L64 50" stroke="#2A9D7C" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="32" cy="24" r="4.5" fill="#2A9D7C"/>
+    </svg>
+    <span class="nav-logo-text">lucid</span>
+  </div>
+  <button class="nav-btn active" id="nav-log" onclick="switchTab('log',this)">Log</button>
+  <button class="nav-btn" id="nav-event" onclick="switchTab('event',this)">Event</button>
+  <button class="nav-btn" id="nav-dash" onclick="switchTab('dash',this)">Dashboard</button>
+  <button class="nav-btn" id="nav-report" onclick="switchTab('report',this)">Report</button>
+  <button class="nav-settings" onclick="showOb(1)" title="Settings">⚙</button>
+</nav>
+
+<!-- WELCOME 1 -->
+<div id="screen-welcome1" class="screen active">
+  <div class="welcome-wrap">
+    <div class="welcome-icon-wrap">
+      <div class="welcome-icon">
+        <svg width="60" height="60" viewBox="0 0 72 72" fill="none">
+          <line x1="8" y1="50" x2="64" y2="50" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+          <path d="M8 50 L16 40 L23 46 L32 24 L41 38 L48 32 L56 44 L64 50" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="32" cy="24" r="4.5" fill="white"/>
+        </svg>
+      </div>
+    </div>
+    <div class="welcome-wordmark">lucid</div>
+    <div class="welcome-tagline">migraine pattern tracker</div>
+    <div class="welcome-headline">Most migraine advice is generic. Your triggers are specific.</div>
+    <div class="welcome-body">This app helps you find them. Not by telling you what usually causes migraines — but by watching what actually precedes yours, over time, until a pattern emerges that is yours alone.</div>
+    <button class="btn-primary" onclick="showScreen('welcome2')">Get started</button>
+    <button class="btn-secondary" onclick="launchApp('log')">I already have an account</button>
+    <div class="welcome-footer">
+      <div class="welcome-footer-text">Built by a migraineur who wanted to understand what was actually happening — not just manage what kept going wrong.</div>
+    </div>
+  </div>
+</div>
+
+<!-- WELCOME 2 -->
+<div id="screen-welcome2" class="screen">
+  <div style="padding:1.5rem 1.25rem 5rem">
+    <div class="section-label" style="margin-top:0">What to expect</div>
+    <div class="card">
+      <div class="expect-item">
+        <div class="expect-icon" style="background:var(--teal-light);color:var(--teal-deeper)">20</div>
+        <div><div class="expect-title">Your first analysis at 20 entries</div><div class="expect-text">After 20 daily logs the app produces its first pattern report — correlating your migraines against your protocol, exercise, sleep, hydration, and nutrition. Not generic advice. Your data.</div></div>
+      </div>
+      <div class="expect-item">
+        <div class="expect-icon" style="background:var(--teal-light);color:var(--teal-deeper)">2'</div>
+        <div><div class="expect-title">Under two minutes a day</div><div class="expect-text">The daily log is designed to be completed quickly. Quick tick-offs for most fields. An optional food diary for deeper analysis.</div></div>
+      </div>
+      <div class="expect-item">
+        <div class="expect-icon" style="background:var(--dawn-light);color:var(--dawn-dark)">!</div>
+        <div><div class="expect-title">This is not medical advice</div><div class="expect-text">The app identifies patterns in your own data. It does not diagnose, prescribe, or replace your doctor. Always discuss medication and supplement changes with a medical professional.</div></div>
+      </div>
+      <div class="expect-item">
+        <div class="expect-icon" style="background:var(--warm-white-2);color:var(--text-mid)">~</div>
+        <div><div class="expect-title">Patterns take time</div><div class="expect-text">One good night or one bad day proves nothing. Give it three months of consistent logging — that is when the signal separates from the noise.</div></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="showOb(1)" style="margin-top:.5rem">Set up my profile</button>
+  </div>
+</div>
+
+<!-- ONBOARDING 1 -->
+<div id="ob-screen-1" class="ob-screen">
+  <div class="ob-progress"><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  <div class="ob-title">About you</div>
+  <div class="ob-sub">Helps the app contextualise your data. Nothing is shared.</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">First name</div></div><input class="input-field" id="ob-name" type="text" placeholder="Your name" style="width:140px"></div>
+    <div class="row"><div class="row-left"><div class="row-label">Age range</div></div><select class="select-field" id="ob-age" style="width:140px"><option>Under 25</option><option>25–34</option><option>35–44</option><option>45–54</option><option selected>55–64</option><option>65+</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Biological sex</div><div class="row-sub">Relevant to hormonal patterns</div></div><select class="select-field" id="ob-sex" style="width:140px"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Years suffering</div></div><select class="select-field" id="ob-years" style="width:140px"><option>Under 1</option><option>1–3</option><option>3–5</option><option>5–10</option><option>10–20</option><option selected>20+ years</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Avg migraines per month</div></div><select class="select-field" id="ob-freq" style="width:140px"><option>1–2</option><option selected>3–5</option><option>6–10</option><option>10+</option></select></div>
+  </div>
+  <button class="btn-primary" onclick="saveProfile();showOb(2)">Continue</button>
+</div>
+
+<!-- ONBOARDING 2 -->
+<div id="ob-screen-2" class="ob-screen">
+  <div class="ob-progress"><div class="ob-dot done"></div><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  <div class="ob-title">Your protocol</div>
+  <div class="ob-sub">Add the supplements you take. These become your daily checklist. Edit anytime.</div>
+  <div class="card" id="supp-list">
+    <div class="supp-item"><div><div class="supp-name">Magnesium glycinate</div><div class="supp-dose">300mg — night</div></div><button class="remove-btn" onclick="removeSupp(this)">×</button></div>
+    <div class="supp-item"><div><div class="supp-name">Ginger</div><div class="supp-dose">540mg — night</div></div><button class="remove-btn" onclick="removeSupp(this)">×</button></div>
+  </div>
+  <div class="section-label">Add a supplement</div>
+  <div class="card">
+    <div style="margin-bottom:8px"><div class="food-label">Name</div><input class="input-field" id="supp-name" type="text" placeholder="e.g. Riboflavin B2"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div style="flex:1"><div class="food-label">Dose</div><input class="input-field" id="supp-dose" type="text" placeholder="e.g. 400mg"></div>
+      <div style="flex:1"><div class="food-label">When</div><select class="select-field" id="supp-timing"><option>Morning</option><option>With meal</option><option>Afternoon</option><option selected>Night</option><option>Post-exercise</option></select></div>
+    </div>
+    <button class="btn-secondary" onclick="addSupp()" style="margin-top:0">+ Add to protocol</button>
+  </div>
+  <div style="font-size:11px;color:var(--text-light);margin-bottom:.5rem">Not sure what to take? <button onclick="toggleInfo('info-lib')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--teal);font-family:var(--font-sans)">Browse evidence-based options</button></div>
+  <div class="info-panel" id="info-lib" style="margin-bottom:.75rem">Magnesium glycinate (400mg/day), Riboflavin B2 (400mg/day), CoQ10 ubiquinol (200mg/day with food), Ginger root (500–600mg/day). All are low-risk at these doses. Discuss with your doctor before starting.</div>
+  <button class="btn-primary" onclick="saveSupps();showOb(3)">Continue</button>
+</div>
+
+<!-- ONBOARDING 3 -->
+<div id="ob-screen-3" class="ob-screen">
+  <div class="ob-progress"><div class="ob-dot done"></div><div class="ob-dot done"></div><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+  <div class="ob-title">Known triggers</div>
+  <div class="ob-sub">Select anything you already know affects you. Appears as your personal checklist daily.</div>
+  <div class="card">
+    <div class="flag-grid" style="margin-bottom:10px">
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Red wine</button>
+      <button class="flag-btn selected-teal" onclick="this.classList.toggle('selected-teal')">Aged cheese</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Caffeine change</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Skipped meals</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Poor sleep</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Strong smells</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Bright light</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Stress</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Hormonal</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Weather change</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Alcohol</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">MSG / processed</button>
+    </div>
+    <div class="food-label" style="margin-bottom:4px">Add your own</div>
+    <input class="input-field" id="custom-trigger" type="text" placeholder="e.g. specific perfume, screen time…">
+  </div>
+  <button class="btn-primary" onclick="showOb(4)">Continue</button>
+</div>
+
+<!-- ONBOARDING 4 -->
+<div id="ob-screen-4" class="ob-screen">
+  <div class="ob-progress"><div class="ob-dot done"></div><div class="ob-dot done"></div><div class="ob-dot done"></div><div class="ob-dot active"></div></div>
+  <div class="ob-title">Exercise profile</div>
+  <div class="ob-sub">Helps the app track post-exercise patterns. Select all that apply.</div>
+  <div class="card">
+    <div class="flag-grid" style="margin-bottom:10px">
+      <button class="flag-btn selected-teal" onclick="this.classList.toggle('selected-teal')">Open water swim</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Pool swim</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Running</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Cycling</button>
+      <button class="flag-btn selected-teal" onclick="this.classList.toggle('selected-teal')">Golf</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Gym / weights</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Yoga / pilates</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Other</button>
+    </div>
+    <div class="row" style="padding-top:8px"><div class="row-left"><div class="row-label">Typical weekly sessions</div></div><select class="select-field" style="width:120px"><option>1–2</option><option selected>3–4</option><option>5–6</option><option>Daily</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Typical session time</div></div><select class="select-field" style="width:120px"><option selected>Early morning</option><option>Morning</option><option>Midday</option><option>Afternoon</option><option>Evening</option></select></div>
+  </div>
+  <button class="btn-primary" onclick="launchApp('log')">Start logging</button>
+</div>
+
+<!-- DAILY LOG -->
+<div id="main-log" class="main-screen active">
+  <div class="today-date" id="today-label"></div>
+
+  <div class="section-label">Protocol</div>
+  <div class="card" id="protocol-card">
+    <div class="row"><div class="row-left"><div class="row-label">Magnesium glycinate <button class="info-btn" onclick="toggleInfo('i-mag')">i</button></div><div class="info-panel" id="i-mag">Migraineurs consistently show lower intracellular magnesium. Glycinate is well-absorbed. On swim days split the dose — some post-swim, rest at night.</div><div class="row-sub">300mg — night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Ginger <button class="info-btn" onclick="toggleInfo('i-gin')">i</button></div><div class="info-panel" id="i-gin">Inhibits prostaglandins involved in neurogenic inflammation. Useful preventively and acutely at first sign of onset.</div><div class="row-sub">540mg — night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Riboflavin B2 <button class="info-btn" onclick="toggleInfo('i-b2')">i</button></div><div class="info-panel" id="i-b2">Supports mitochondrial energy production in brain cells. 400mg is the therapeutic dose. Expect bright yellow urine — harmless, confirms absorption.</div><div class="row-sub">400mg — morning</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">CoQ10 ubiquinol <button class="info-btn" onclick="toggleInfo('i-coq')">i</button></div><div class="info-panel" id="i-coq">Electron carrier in the mitochondrial energy chain. Take with a meal containing fat. Ubiquinol is the active form — preferable over 40.</div><div class="row-sub">200mg — with main meal</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+  </div>
+
+  <div class="section-label">Exercise</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">Open water swim</div></div><button class="toggle" id="swim-tog" onclick="this.classList.toggle('on');toggleEl('swim-det',this)"></button></div>
+    <div id="swim-det" style="display:none;padding-top:8px">
+      <div class="counter-row"><div class="row-left"><div class="row-label">Distance (km)</div></div><input class="temp-input" id="swim-dist" type="number" placeholder="2.0" step="0.1" min="0"></div>
+      <div class="counter-row"><div class="row-left"><div class="row-label">Water temp (°C) <button class="info-btn" onclick="toggleInfo('i-temp')">i</button></div><div class="info-panel" id="i-temp">Below 15°C activates the trigeminal nerve more strongly and creates a larger stress hormone response. Track consistently — patterns often cluster around a specific threshold.</div></div><input class="temp-input" id="swim-temp" type="number" placeholder="18" min="0" max="35"></div>
+      <div class="row"><div class="row-left"><div class="row-label">Post-swim electrolytes <button class="info-btn" onclick="toggleInfo('i-elec')">i</button></div><div class="info-panel" id="i-elec">Plain water doesn't replace sodium, potassium, and magnesium lost through swimming. A drink with sodium and potassium chloride immediately post-swim restores balance before your body registers the deficit.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">300mg</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    </div>
+    <div class="row" style="margin-top:4px"><div class="row-left"><div class="row-label">Other exercise</div></div><button class="toggle" onclick="this.classList.toggle('on');toggleEl('other-det',this)"></button></div>
+    <div id="other-det" style="display:none;padding-top:8px"><input class="input-field" type="text" placeholder="e.g. golf, run — type and duration"></div>
+  </div>
+
+  <div class="section-label">Sleep</div>
+  <div class="card">
+    <div class="counter-row"><div class="row-left"><div class="row-label">Hours slept</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('sleep',-.5)">−</button><div class="counter-val" id="sleep-val">7</div><button class="counter-btn" onclick="adjustCounter('sleep',.5)">+</button></div></div>
+    <div class="row"><div class="row-left"><div class="row-label">Woke during the night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Woke before 5am</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+  </div>
+
+  <div class="section-label">Hydration</div>
+  <div class="section-note">Log what you actually drank today</div>
+  <div class="card">
+    <div class="counter-row"><div class="row-left"><div class="row-label">Water</div><div class="row-sub">glasses (250ml)</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('water',-1)">−</button><div class="counter-val" id="water-val">0</div><button class="counter-btn" onclick="adjustCounter('water',1)">+</button></div></div>
+    <div class="counter-row"><div class="row-left"><div class="row-label">Coffee <span class="tag tag-caffeine">caffeine</span></div><div class="row-sub">cups</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('coffee',-1)">−</button><div class="counter-val" id="coffee-val">0</div><button class="counter-btn" onclick="adjustCounter('coffee',1)">+</button></div></div>
+    <div class="counter-row"><div class="row-left"><div class="row-label">Black / green tea <span class="tag tag-caffeine">caffeine</span></div><div class="row-sub">cups</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('tcaf',-1)">−</button><div class="counter-val" id="tcaf-val">0</div><button class="counter-btn" onclick="adjustCounter('tcaf',1)">+</button></div></div>
+    <div class="counter-row"><div class="row-left"><div class="row-label">Rooibos / herbal <span class="tag tag-free">caffeine-free</span></div><div class="row-sub">cups</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('therb',-1)">−</button><div class="counter-val" id="therb-val">0</div><button class="counter-btn" onclick="adjustCounter('therb',1)">+</button></div></div>
+    <div class="counter-row"><div class="row-left"><div class="row-label">Alcohol</div><div class="row-sub">standard drinks</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('alcohol',-1)">−</button><div class="counter-val" id="alcohol-val">0</div><button class="counter-btn" onclick="adjustCounter('alcohol',1)">+</button></div></div>
+    <div class="row"><div class="row-left"><div class="row-label">Sugary drinks</div><div class="row-sub">cola, juice, energy drinks</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+  </div>
+
+  <div class="section-label">Nutrition</div>
+  <div class="section-note">Specific questions — not a food diary</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">Ate within 2 hrs of waking</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <div class="row-left"><div class="row-label">Longest gap between meals <button class="info-btn" onclick="toggleInfo('i-gap')">i</button></div><div class="info-panel" id="i-gap">Going more than 5–6 hours without eating causes blood sugar to drop, triggering a stress hormone response — one of the more reliable migraine triggers.</div></div>
+      <div class="gap-grid" style="width:100%;margin-top:6px"><button class="gap-btn" onclick="selectGap(this)">Under 4 hrs</button><button class="gap-btn" onclick="selectGap(this)">4–6 hrs</button><button class="gap-btn" onclick="selectGap(this)">6–8 hrs</button><button class="gap-btn" onclick="selectGap(this)">8+ hrs</button></div>
+    </div>
+    <div class="row"><div class="row-left"><div class="row-label">Meal with significant protein</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Bedtime snack <button class="info-btn" onclick="toggleInfo('i-snack')">i</button></div><div class="info-panel" id="i-snack">Blood sugar drops naturally around 2–4am — a common migraine onset window. A small slow-release carbohydrate before sleep (two Medjool dates, a banana, a small bowl of oats) buffers this trough. Most useful on exercise days. Not about eating more — about preventing a specific overnight trigger.</div><div class="row-sub">Dates, banana, oats — slow-release carb only</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+  </div>
+
+  <div class="section-label">Detailed food log</div>
+  <div class="section-note">Optional — for deeper pattern analysis over time</div>
+  <div class="card">
+    <button class="food-expand-btn" id="food-expand-btn" onclick="toggleFood()">+ Add today's meals</button>
+    <div class="food-detail" id="food-detail">
+      <div class="food-row"><div class="food-label">Breakfast</div><textarea class="textarea-field" rows="2" placeholder="e.g. eggs, rooibos, oats"></textarea></div>
+      <div class="food-row"><div class="food-label">Lunch</div><textarea class="textarea-field" rows="2" placeholder="e.g. chicken salad, water"></textarea></div>
+      <div class="food-row"><div class="food-label">Dinner</div><textarea class="textarea-field" rows="2" placeholder="e.g. grilled fish, vegetables"></textarea></div>
+      <div class="food-row"><div class="food-label">Snacks — include time</div><div style="display:flex;gap:8px"><textarea class="textarea-field" rows="2" placeholder="e.g. two Medjool dates" style="flex:1"></textarea><input class="temp-input" type="time" style="height:auto;align-self:flex-start;width:88px"></div></div>
+    </div>
+  </div>
+
+  <div class="section-label">Known general triggers</div>
+  <div class="section-note">Research-backed triggers — did any apply today?</div>
+  <div class="card">
+    <div class="flag-grid">
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Alcohol</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Aged cheese</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Processed meat</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">MSG / ultra-processed</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">More caffeine than usual</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Less caffeine than usual</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">High refined sugar</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Strong smell / perfume</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Bright / flickering light</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">High stress event</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Hormonal (if relevant)</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Weather change</button>
+    </div>
+  </div>
+
+  <div class="section-label">Your personal triggers</div>
+  <div class="section-note">From your profile — did any occur today?</div>
+  <div class="card"><div class="flag-grid"><button class="flag-btn" onclick="this.classList.toggle('selected')">Aged cheese</button></div></div>
+
+  <button class="btn-primary" onclick="saveLog()">Save today's log</button>
+</div>
+
+<!-- EVENT LOG -->
+<div id="main-event" class="main-screen">
+  <div id="event-context-banner" class="migrate-card" style="display:none"></div>
+
+  <div class="section-label" style="margin-top:0">Event type</div>
+  <div class="card"><div class="gap-grid"><button class="gap-btn" id="evt-pre" onclick="selectEvent('pre')">Pre-migraine</button><button class="gap-btn" id="evt-full" onclick="selectEvent('full')">Full migraine</button></div></div>
+
+  <div class="section-label">Onset time</div>
+  <div class="card"><input class="input-field" type="time" id="onset-time"></div>
+
+  <div class="section-label">Severity (1–10)</div>
+  <div class="card"><div class="sev-row"><button class="sev-btn s1" onclick="selectSev(this)">1</button><button class="sev-btn s2" onclick="selectSev(this)">2</button><button class="sev-btn s3" onclick="selectSev(this)">3</button><button class="sev-btn s4" onclick="selectSev(this)">4</button><button class="sev-btn s5" onclick="selectSev(this)">5</button><button class="sev-btn s6" onclick="selectSev(this)">6</button><button class="sev-btn s7" onclick="selectSev(this)">7</button><button class="sev-btn s8" onclick="selectSev(this)">8</button><button class="sev-btn s9" onclick="selectSev(this)">9</button><button class="sev-btn s10" onclick="selectSev(this)">10</button></div></div>
+
+  <div class="section-label">Early warning signs</div>
+  <div class="card"><div class="flag-grid"><button class="flag-btn" onclick="this.classList.toggle('selected')">Neck stiffness</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Light sensitivity</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Aura / visual</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Nausea</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Fatigue / yawning</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Mood change</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Food craving</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Scalp sensitivity</button></div></div>
+
+  <div class="section-label">Treatment taken</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">Migril</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Triptan</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Ginger (acute dose)</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Nothing yet</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+  </div>
+
+  <div class="section-label">How quickly did you treat it?</div>
+  <div class="card"><div class="gap-grid"><button class="gap-btn" onclick="selectOne(this,'timing')">Under 30 min</button><button class="gap-btn" onclick="selectOne(this,'timing')">30–60 min</button><button class="gap-btn" onclick="selectOne(this,'timing')">1–2 hrs</button><button class="gap-btn" onclick="selectOne(this,'timing')">2+ hrs</button></div></div>
+
+  <div class="section-label">Outcome</div>
+  <div class="card"><div class="gap-grid"><button class="gap-btn" onclick="selectOne(this,'outcome')">Fully resolved</button><button class="gap-btn" onclick="selectOne(this,'outcome')">Mostly resolved</button><button class="gap-btn" onclick="selectOne(this,'outcome')">Partial relief</button><button class="gap-btn" onclick="selectOne(this,'outcome')">No relief</button></div></div>
+
+  <button class="btn-primary" onclick="saveEvent()">Log this event</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="main-dash" class="main-screen">
+  <div class="section-label" style="margin-top:0">This month</div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Migraines</div><div class="stat-value">2</div><div class="stat-sub stat-up">↓ 3 vs last month</div></div>
+    <div class="stat-card"><div class="stat-label">Protocol compliance</div><div class="stat-value">87%</div><div class="stat-sub stat-up">↑ 12% vs last month</div></div>
+    <div class="stat-card"><div class="stat-label">Swim days</div><div class="stat-value">14</div><div class="stat-sub">this month</div></div>
+    <div class="stat-card"><div class="stat-label">Avg severity</div><div class="stat-value">4.5</div><div class="stat-sub stat-up">↓ 2.7 vs last month</div></div>
+  </div>
+
+  <div class="section-label">Barometric pressure — Knysna</div>
+  <div class="pressure-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <span class="pressure-value" id="pressure-val">1013</span><span class="pressure-unit">hPa</span>
+        <div id="pressure-trend-badge" class="pressure-trend trend-stable" style="margin-top:6px">Stable</div>
+        <div style="font-size:11px;color:var(--text-light);margin-top:4px" id="pressure-note">No significant pressure change in 24hrs</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--text-light);margin-bottom:6px">7-day trend</div>
+        <div class="pressure-bars" id="pressure-bars"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-light);line-height:1.6" id="pressure-advice"></div>
+  </div>
+
+  <div class="section-label">April 2026</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-around;margin-bottom:6px"><span style="font-size:10px;color:var(--text-light)">M</span><span style="font-size:10px;color:var(--text-light)">T</span><span style="font-size:10px;color:var(--text-light)">W</span><span style="font-size:10px;color:var(--text-light)">T</span><span style="font-size:10px;color:var(--text-light)">F</span><span style="font-size:10px;color:var(--text-light)">S</span><span style="font-size:10px;color:var(--text-light)">S</span></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--teal-light);border:1px solid var(--teal-mid)"></div><span style="font-size:11px;color:var(--text-light)">Clean</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--dawn-light);border:1px solid #E8C4A4"></div><span style="font-size:11px;color:var(--text-light)">Near-miss</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--coral)"></div><span style="font-size:11px;color:var(--text-light)">Migraine</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--warm-white-2)"></div><span style="font-size:11px;color:var(--text-light)">Not logged</span></div>
+    </div>
+  </div>
+
+  <div class="section-label">Progress to first analysis</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;color:var(--text-mid)">Entries logged</span><span style="font-size:13px;font-weight:500;color:var(--text-dark)" id="entry-count">14 / 20</span></div>
+    <div class="progress-bg"><div class="progress-fill" id="progress-fill" style="width:70%"></div></div>
+    <div style="font-size:12px;color:var(--text-light);margin-top:6px" id="progress-note">6 more days until your first pattern analysis</div>
+  </div>
+
+  <div class="section-label">Protocol streak — last 14 days</div>
+  <div class="card">
+    <div class="streak-bar" id="streak-bar"></div>
+    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></div><span style="font-size:11px;color:var(--text-light)">Done</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--coral)"></div><span style="font-size:11px;color:var(--text-light)">Migraine</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--warm-white-2)"></div><span style="font-size:11px;color:var(--text-light)">Missed</span></div>
+    </div>
+  </div>
+
+  <div class="section-label">Recent events</div>
+  <div class="card">
+    <div class="event-item"><div class="event-time">Today, 05:00</div><div class="event-title">Pre-migraine — neck stiffness, severity 3</div><span class="badge badge-pre">Pre-migraine</span></div>
+    <div class="event-item"><div class="event-time">18 Apr, 03:00</div><div class="event-title">Migraine — severity 7, triptan at 2 hrs</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
+    <div class="event-item"><div class="event-time">11 Apr, 03:30</div><div class="event-title">Migraine — severity 6, Migril under 30 min</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
+  </div>
+
+  <div class="section-label">Emerging pattern</div>
+  <div class="analysis-card">
+    <div class="analysis-title">Early signal — swim days and bedtime snack</div>
+    <div class="analysis-body">4 of your 5 migraines occurred within 20 hours of a swim day. On 3 of those days the bedtime snack was not logged. Water temperature below 15°C was recorded on 2 of those days. Protocol compliance was below 80% in the 3 days preceding each event.</div>
+    <div class="analysis-meta">Partial pattern — strengthens at 20 entries. Full AI analysis unlocks then.</div>
+  </div>
+</div>
+
+<!-- DOCTOR REPORT -->
+<div id="main-report" class="main-screen">
+  <div class="report-header">
+    <div class="report-logo">
+      <svg width="18" height="18" viewBox="0 0 72 72" fill="none"><line x1="8" y1="50" x2="64" y2="50" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/><path d="M8 50 L16 40 L23 46 L32 24 L41 38 L48 32 L56 44 L64 50" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="24" r="4.5" fill="white"/></svg>
+    </div>
+    <div>
+      <div class="report-title-text">lucid</div>
+      <div class="report-subtitle">Patient report — 90 day summary</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="report-section">
+      <div class="report-section-title">Patient profile</div>
+      <div class="report-row"><span class="report-key">Name</span><span class="report-val" id="report-name">—</span></div>
+      <div class="report-row"><span class="report-key">Age range</span><span class="report-val" id="report-age">55–64</span></div>
+      <div class="report-row"><span class="report-key">Years suffering</span><span class="report-val">20+ years</span></div>
+      <div class="report-row"><span class="report-key">Report period</span><span class="report-val">Jan 26 – Apr 25, 2026</span></div>
+      <div class="report-row"><span class="report-key">Days logged</span><span class="report-val">67 of 90 (74%)</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="report-section">
+      <div class="report-section-title">Migraine frequency</div>
+      <div class="report-row"><span class="report-key">Total migraines</span><span class="report-val">8</span></div>
+      <div class="report-row"><span class="report-key">Monthly average</span><span class="report-val">2.7</span></div>
+      <div class="report-row"><span class="report-key">Previous 90 days</span><span class="report-val">14</span></div>
+      <div class="report-row"><span class="report-key">Trend</span><span class="report-val" style="color:var(--teal)">↓ 43% reduction</span></div>
+      <div class="report-row"><span class="report-key">Avg severity</span><span class="report-val">4.5 / 10</span></div>
+      <div class="report-row"><span class="report-key">Most common onset time</span><span class="report-val">02:00–04:00</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="report-section">
+      <div class="report-section-title">Current prevention protocol</div>
+      <div class="report-row"><span class="report-key">Magnesium glycinate</span><span class="report-val">300mg nightly</span></div>
+      <div class="report-row"><span class="report-key">Riboflavin B2</span><span class="report-val">400mg daily</span></div>
+      <div class="report-row"><span class="report-key">CoQ10 ubiquinol</span><span class="report-val">200mg with meal</span></div>
+      <div class="report-row"><span class="report-key">Ginger root</span><span class="report-val">540mg nightly</span></div>
+      <div class="report-row"><span class="report-key">Protocol compliance</span><span class="report-val">87% (58 of 67 logged days)</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="report-section">
+      <div class="report-section-title">Acute medication use</div>
+      <div class="report-row"><span class="report-key">Migril uses</span><span class="report-val">5 of 8 events</span></div>
+      <div class="report-row"><span class="report-key">Triptan uses</span><span class="report-val">3 of 8 events</span></div>
+      <div class="report-row"><span class="report-key">Avg time to treatment</span><span class="report-val">47 minutes</span></div>
+      <div class="report-row"><span class="report-key">Overuse threshold (10/month)</span><span class="report-val" style="color:var(--teal)">Within safe range</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="report-section">
+      <div class="report-section-title">Identified correlations</div>
+      <div class="report-row"><span class="report-key">Post-swim events (within 20hrs)</span><span class="report-val">5 of 8 (63%)</span></div>
+      <div class="report-row"><span class="report-key">Bedtime snack missed</span><span class="report-val">4 of those 5 days</span></div>
+      <div class="report-row"><span class="report-key">Water temp below 15°C</span><span class="report-val">2 of those 5 days</span></div>
+      <div class="report-row"><span class="report-key">Barometric drop >5hPa/24hr</span><span class="report-val">3 of 8 events (38%)</span></div>
+      <div class="report-row"><span class="report-key">Sleep under 6 hours prior</span><span class="report-val">4 of 8 events (50%)</span></div>
+    </div>
+  </div>
+
+  <div class="analysis-card">
+    <div class="analysis-title">Pattern summary for clinical review</div>
+    <div class="analysis-body">Migraine frequency has reduced 43% since beginning the prevention protocol 90 days ago. The strongest correlations are post-exercise onset (particularly cold water swimming) and nights when the pre-sleep carbohydrate snack was omitted. Barometric pressure drops appear as a secondary but consistent factor. Protocol compliance correlates positively with lower frequency weeks.</div>
+  </div>
+
+  <div class="card" style="background:var(--teal-light);border-color:var(--teal-mid)">
+    <div style="font-size:13px;color:var(--teal-deeper);font-weight:500;margin-bottom:4px">Share with your doctor</div>
+    <div style="font-size:12px;color:var(--teal-dark);line-height:1.6;margin-bottom:10px">This report summarises your logged data. It is not a medical document — it is a structured summary to support your consultation.</div>
+    <button class="btn-primary" style="margin-bottom:0;background:var(--teal-dark)" onclick="showToast('PDF export coming in next version')">Export as PDF</button>
+  </div>
+
+  <div class="report-note" style="padding:0 0 1rem">Generated by Lucid on <span id="report-date"></span>. Data reflects user-logged entries only. Patterns are correlational, not causal. Always consult a medical professional regarding diagnosis and treatment.</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const C = {sleep:7,water:0,coffee:0,tcaf:0,therb:0,alcohol:0};
+const CL = {sleep:[3,12],water:[0,20],coffee:[0,10],tcaf:[0,15],therb:[0,15],alcohol:[0,15]};
+
+function adjustCounter(k,d){
+  const[mn,mx]=CL[k];
+  C[k]=Math.min(mx,Math.max(mn,+(C[k]+d).toFixed(1)));
+  document.getElementById(k+'-val').textContent=C[k];
+}
+
+const now = new Date();
+const tl = document.getElementById('today-label');
+if(tl) tl.textContent = now.toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const ot = document.getElementById('onset-time');
+if(ot) ot.value = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+const rd = document.getElementById('report-date');
+if(rd) rd.textContent = now.toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
+
+const sBar = document.getElementById('streak-bar');
+if(sBar){['M','T','W','T','F','S','S','M','T','W','T','F','S','T'].forEach((d,i)=>{
+  const e=document.createElement('div');
+  e.className='streak-day '+['done','done','migraine','done','done','miss','done','done','done','miss','done','done','done','today'][i];
+  e.textContent=d; sBar.appendChild(e);
+});}
+
+const cg = document.getElementById('cal-grid');
+if(cg){
+  const st={3:'c',4:'c',5:'m',6:'c',7:'c',8:'n',9:'c',10:'c',11:'m',12:'c',13:'c',14:'c',15:'c',16:'n',17:'c',18:'m',19:'c',20:'c',21:'c',22:'c',23:'c',24:'c',25:'t'};
+  for(let i=0;i<2;i++){const e=document.createElement('div');e.className='cal-day empty';cg.appendChild(e);}
+  for(let d=1;d<=25;d++){
+    const e=document.createElement('div'); const s=st[d]||'';
+    e.className='cal-day'+(s==='c'||s==='t'?' clean':'')+(s==='n'?' near':'')+(s==='m'?' migraine':'')+(s==='t'?' today':'');
+    e.textContent=d; cg.appendChild(e);
+  }
+}
+
+function buildPressureBars(vals){
+  const pb = document.getElementById('pressure-bars');
+  if(!pb) return;
+  pb.innerHTML='';
+  const mn=Math.min(...vals), mx=Math.max(...vals), range=mx-mn||1;
+  vals.forEach((v,i)=>{
+    const e=document.createElement('div');
+    const h=Math.max(6,Math.round(((v-mn)/range)*28)+4);
+    e.className='pressure-bar'+(v<1010?' low':'');
+    e.style.height=h+'px';
+    pb.appendChild(e);
+  });
+}
+
+function fetchPressure(){
+  const mockVals=[1013,1011,1009,1007,1010,1012,1013];
+  buildPressureBars(mockVals);
+  const current=mockVals[mockVals.length-1];
+  const prev=mockVals[mockVals.length-2];
+  const diff=current-prev;
+  const pv=document.getElementById('pressure-val');
+  const pt=document.getElementById('pressure-trend-badge');
+  const pn=document.getElementById('pressure-note');
+  const pa=document.getElementById('pressure-advice');
+  if(pv) pv.textContent=current;
+  if(diff<-5){
+    if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}
+    if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — significant change';
+    if(pa) pa.textContent='Rapid pressure drops are a known migraine trigger for many sufferers. Consider being especially consistent with your protocol today and ensuring your bedtime snack is not skipped tonight.';
+  } else if(diff<-2){
+    if(pt){pt.textContent='Falling';pt.className='pressure-trend trend-falling';}
+    if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — moderate change';
+    if(pa) pa.textContent='Moderate pressure drop. Worth noting alongside your other variables today — particularly if you have a swim scheduled.';
+  } else if(diff>3){
+    if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}
+    if(pn) pn.textContent='Rising '+diff.toFixed(0)+'hPa — pressure stabilising';
+    if(pa) pa.textContent='Rising pressure is generally less associated with migraine onset. Continue your normal protocol.';
+  } else {
+    if(pt){pt.textContent='Stable';pt.className='pressure-trend trend-stable';}
+    if(pn) pn.textContent='No significant pressure change in 24hrs';
+    if(pa) pa.textContent='Stable pressure today. No additional migraine risk from barometric changes.';
+  }
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&hourly=surface_pressure&forecast_days=1`)
+      .then(r=>r.json()).then(data=>{
+        if(data.hourly&&data.hourly.surface_pressure){
+          const vals=data.hourly.surface_pressure.filter((_,i)=>i%3===0).slice(0,7);
+          buildPressureBars(vals);
+          const cur=Math.round(vals[vals.length-1]);
+          const prv=Math.round(vals[vals.length-2]);
+          if(pv) pv.textContent=cur;
+          const df=cur-prv;
+          if(df<-5){if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}}
+          else if(df<-2){if(pt){pt.textContent='Falling';pt.className='pressure-trend trend-falling';}}
+          else if(df>3){if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}}
+        }
+      }).catch(()=>{});
+    },()=>{});
+  }
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen,.ob-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('main-app-wrap') && (document.getElementById('main-app-wrap').style.display='none');
+  document.getElementById('app-nav').classList.remove('visible');
+  const el=document.getElementById('screen-'+id)||document.getElementById('ob-screen-'+id.replace('screen-',''));
+  if(el) el.classList.add('active');
+}
+
+function showOb(n){
+  document.querySelectorAll('.screen,.ob-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app-nav').classList.remove('visible');
+  document.getElementById('ob-screen-'+n).classList.add('active');
+}
+
+function launchApp(tab){
+  document.querySelectorAll('.screen,.ob-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app-nav').classList.add('visible');
+  switchTab(tab, document.getElementById('nav-'+tab));
+  fetchPressure();
+  const rn=document.getElementById('report-name');
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  if(rn&&profile.name) rn.textContent=profile.name;
+  if(profile.age){const ra=document.getElementById('report-age');if(ra)ra.textContent=profile.age;}
+  const b=document.getElementById('event-context-banner');
+  const todayLog=JSON.parse(localStorage.getItem('lucid-log-'+new Date().toDateString())||'null');
+  if(b&&todayLog){b.style.display='block';b.textContent="Today you logged: "+(todayLog.swam?'swim, ':'')+"protocol "+(todayLog.protocolCount||0)+"/4 taken. Do any feel relevant to this event?";}
+}
+
+function switchTab(name, btn){
+  document.querySelectorAll('.main-screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('main-'+name).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+function toggleEl(id,btn){
+  document.getElementById(id).style.display=btn.classList.contains('on')?'block':'none';
+}
+function toggleInfo(id){document.getElementById(id).classList.toggle('open');}
+function toggleFood(){
+  const d=document.getElementById('food-detail');
+  const b=document.getElementById('food-expand-btn');
+  const o=d.classList.toggle('open');
+  b.textContent=o?'− Hide food log':'+ Add today\'s meals';
+}
+function selectGap(btn){
+  btn.closest('.gap-grid').querySelectorAll('.gap-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function selectOne(btn,group){
+  btn.closest('.card').querySelectorAll('.gap-btn').forEach(b=>{
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+group+"'")) b.classList.remove('selected');
+  });
+  btn.classList.add('selected');
+}
+function selectSev(btn){document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');}
+function selectEvent(type){
+  document.getElementById('evt-pre').classList.remove('selected');
+  document.getElementById('evt-full').classList.remove('selected');
+  document.getElementById('evt-'+type).classList.add('selected');
+}
+function addSupp(){
+  const n=document.getElementById('supp-name').value.trim();
+  const d=document.getElementById('supp-dose').value.trim();
+  const t=document.getElementById('supp-timing').value;
+  if(!n) return;
+  const list=document.getElementById('supp-list');
+  const item=document.createElement('div');
+  item.className='supp-item';
+  item.innerHTML='<div><div class="supp-name">'+n+'</div><div class="supp-dose">'+d+(d?' — ':'')+t+'</div></div><button class="remove-btn" onclick="removeSupp(this)">×</button>';
+  list.appendChild(item);
+  document.getElementById('supp-name').value='';
+  document.getElementById('supp-dose').value='';
+}
+function removeSupp(btn){btn.closest('.supp-item').remove();}
+function saveProfile(){
+  const profile={
+    name:document.getElementById('ob-name').value,
+    age:document.getElementById('ob-age').value,
+    sex:document.getElementById('ob-sex').value,
+    years:document.getElementById('ob-years').value,
+    freq:document.getElementById('ob-freq').value
+  };
+  localStorage.setItem('lucid-profile',JSON.stringify(profile));
+}
+function saveSupps(){
+  const supps=[];
+  document.querySelectorAll('#supp-list .supp-item').forEach(item=>{
+    supps.push({name:item.querySelector('.supp-name').textContent,dose:item.querySelector('.supp-dose').textContent});
+  });
+  localStorage.setItem('lucid-supps',JSON.stringify(supps));
+}
+function saveLog(){
+  const logData={
+    date:new Date().toDateString(),
+    swam:document.getElementById('swim-tog').classList.contains('on'),
+    swimDist:document.getElementById('swim-dist').value,
+    swimTemp:document.getElementById('swim-temp').value,
+    sleep:C.sleep,water:C.water,coffee:C.coffee,
+    protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length
+  };
+  localStorage.setItem('lucid-log-'+logData.date,JSON.stringify(logData));
+  const entries=JSON.parse(localStorage.getItem('lucid-entry-count')||'0');
+  const newCount=entries+1;
+  localStorage.setItem('lucid-entry-count',newCount);
+  updateProgress(newCount);
+  showToast('Today logged ✓');
+}
+function saveEvent(){showToast('Event saved ✓');}
+function updateProgress(count){
+  const target=20;
+  const pct=Math.min(100,Math.round((count/target)*100));
+  const pf=document.getElementById('progress-fill');
+  const ec=document.getElementById('entry-count');
+  const pn=document.getElementById('progress-note');
+  if(pf) pf.style.width=pct+'%';
+  if(ec) ec.textContent=count+' / '+target;
+  if(pn){
+    if(count>=target) pn.textContent='Analysis ready — view your report';
+    else pn.textContent=(target-count)+' more '+(target-count===1?'day':'days')+' until your first pattern analysis';
+  }
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+const savedCount=parseInt(localStorage.getItem('lucid-entry-count')||'14');
+updateProgress(savedCount);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
