@@ -402,7 +402,7 @@ body {
     <div class="card">
       <div class="expect-item">
         <div class="expect-icon" style="background:var(--teal-light);color:var(--teal-deeper)">20</div>
-        <div><div class="expect-title">Your first analysis at 20 entries</div><div class="expect-text">After 20 daily logs the app produces its first pattern report — correlating your migraines against your protocol, exercise, sleep, hydration, and nutrition. Not generic advice. Your data.</div></div>
+        <div><div class="expect-title">Your first analysis at 20 entries</div><div class="expect-text">After 20 daily logs the app produces its first pattern report — correlating your migraines against your daily routine, exercise, sleep, hydration, and nutrition. Not generic advice. Your data.</div></div>
       </div>
       <div class="expect-item">
         <div class="expect-icon" style="background:var(--teal-light);color:var(--teal-deeper)">2'</div>
@@ -439,7 +439,7 @@ body {
 <!-- ONBOARDING 2 -->
 <div id="ob-screen-2" class="ob-screen">
   <div class="ob-progress"><div class="ob-dot done"></div><div class="ob-dot active"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
-  <div class="ob-title">Your protocol</div>
+  <div class="ob-title">Your daily routine</div>
   <div class="ob-sub">Add the supplements you take. These become your daily checklist. Edit anytime.</div>
   <div class="card" id="supp-list">
     <div class="supp-item"><div><div class="supp-name">Magnesium glycinate</div><div class="supp-dose">300mg — night</div></div><button class="remove-btn" onclick="removeSupp(this)">×</button></div>
@@ -452,7 +452,7 @@ body {
       <div style="flex:1"><div class="food-label">Dose</div><input class="input-field" id="supp-dose" type="text" placeholder="e.g. 400mg"></div>
       <div style="flex:1"><div class="food-label">When</div><select class="select-field" id="supp-timing"><option>Morning</option><option>With meal</option><option>Afternoon</option><option selected>Night</option><option>Post-exercise</option></select></div>
     </div>
-    <button class="btn-secondary" onclick="addSupp()" style="margin-top:0">+ Add to protocol</button>
+    <button class="btn-secondary" onclick="addSupp()" style="margin-top:0">+ Add to my routine</button>
   </div>
   <div style="font-size:11px;color:var(--text-light);margin-bottom:.5rem">Not sure what to take? <button onclick="toggleInfo('info-lib')" style="border:none;background:none;cursor:pointer;font-size:11px;color:var(--teal);font-family:var(--font-sans)">Browse evidence-based options</button></div>
   <div class="info-panel" id="info-lib" style="margin-bottom:.75rem">Magnesium glycinate (400mg/day), Riboflavin B2 (400mg/day), CoQ10 ubiquinol (200mg/day with food), Ginger root (500–600mg/day). All are low-risk at these doses. Discuss with your doctor before starting.</div>
@@ -511,7 +511,7 @@ body {
 <div id="main-log" class="main-screen active">
   <div class="today-date" id="today-label"></div>
 
-  <div class="section-label">Protocol</div>
+  <div class="section-label">Daily routine</div>
   <div class="card" id="protocol-card">
     <div class="row"><div class="row-left"><div class="row-label">Magnesium glycinate <button class="info-btn" onclick="toggleInfo('i-mag')">i</button></div><div class="info-panel" id="i-mag">Migraineurs consistently show lower intracellular magnesium. Glycinate is well-absorbed. On swim days split the dose — some post-swim, rest at night.</div><div class="row-sub">300mg — night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
     <div class="row"><div class="row-left"><div class="row-label">Ginger <button class="info-btn" onclick="toggleInfo('i-gin')">i</button></div><div class="info-panel" id="i-gin">Inhibits prostaglandins involved in neurogenic inflammation. Useful preventively and acutely at first sign of onset.</div><div class="row-sub">540mg — night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
@@ -638,7 +638,7 @@ body {
   <div class="section-label" style="margin-top:0">This month</div>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-label">Migraines</div><div class="stat-value">2</div><div class="stat-sub stat-up">↓ 3 vs last month</div></div>
-    <div class="stat-card"><div class="stat-label">Protocol compliance</div><div class="stat-value">87%</div><div class="stat-sub stat-up">↑ 12% vs last month</div></div>
+    <div class="stat-card"><div class="stat-label">Routine compliance</div><div class="stat-value">87%</div><div class="stat-sub stat-up">↑ 12% vs last month</div></div>
     <div class="stat-card"><div class="stat-label">Swim days</div><div class="stat-value">14</div><div class="stat-sub">this month</div></div>
     <div class="stat-card"><div class="stat-label">Avg severity</div><div class="stat-value">4.5</div><div class="stat-sub stat-up">↓ 2.7 vs last month</div></div>
   </div>
@@ -688,7 +688,7 @@ body {
     <div style="font-size:11px;color:var(--text-light);text-align:center">Lucid is free to use. This unlocks the AI pattern analysis layer only.</div>
   </div>
 
-  <div class="section-label">Protocol streak — last 14 days</div>
+  <div class="section-label">Routine streak — last 14 days</div>
   <div class="card">
     <div class="streak-bar" id="streak-bar"></div>
     <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
@@ -708,7 +708,7 @@ body {
   <div class="section-label">Emerging pattern</div>
   <div class="analysis-card" id="analysis-card">
     <div class="analysis-title" id="analysis-title">Early signal — swim days and bedtime snack</div>
-    <div class="analysis-body" id="analysis-body">4 of your 5 migraines occurred within 20 hours of a swim day. On 3 of those days the bedtime snack was not logged. Water temperature below 15°C was recorded on 2 of those days. Protocol compliance was below 80% in the 3 days preceding each event.</div>
+    <div class="analysis-body" id="analysis-body">4 of your 5 migraines occurred within 20 hours of a swim day. On 3 of those days the bedtime snack was not logged. Water temperature below 15°C was recorded on 2 of those days. Routine compliance was below 80% in the 3 days preceding each event.</div>
     <div class="analysis-meta" id="analysis-meta">Partial pattern — strengthens at 20 entries. Full AI analysis unlocks then.</div>
     <div id="analysis-unlock-cta" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #E8C4A4">
       <button style="width:100%;padding:11px;border-radius:var(--radius-sm);border:none;background:var(--dawn-dark);color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font-sans)" onclick="handleUnlock()">Unlock full analysis — R149 once</button>
@@ -816,7 +816,7 @@ body {
       </div>
     </div>
     <div style="font-size:15px;font-weight:500;color:var(--text-dark);margin-bottom:.5rem">Unlock AI analysis</div>
-    <div style="font-size:13px;color:var(--text-mid);line-height:1.7;margin-bottom:1.25rem">Your logged data contains patterns. The AI analysis reads your full history — swim days, sleep, hydration, protocol compliance, events — and surfaces the correlations most relevant to your migraines. Every future analysis is included. This is a one-time payment. No subscription. No recurring charge. Ever.</div>
+    <div style="font-size:13px;color:var(--text-mid);line-height:1.7;margin-bottom:1.25rem">Your logged data contains patterns. The AI analysis reads your full history — swim days, sleep, hydration, routine compliance, events — and surfaces the correlations most relevant to your migraines. Every future analysis is included. This is a one-time payment. No subscription. No recurring charge. Ever.</div>
     <div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-md);padding:12px 14px;margin-bottom:1.25rem">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-size:13px;color:var(--dawn-dark);font-weight:500">AI analysis — lifetime</div><div style="font-size:11px;color:var(--text-light);margin-top:2px">Includes PDF export · all future analyses</div></div>
@@ -895,7 +895,7 @@ function fetchPressure(){
   if(diff<-5){
     if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}
     if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — significant change';
-    if(pa) pa.textContent='Rapid pressure drops are a known migraine trigger for many sufferers. Consider being especially consistent with your protocol today and ensuring your bedtime snack is not skipped tonight.';
+    if(pa) pa.textContent='Rapid pressure drops are a known migraine trigger for many sufferers. Consider being especially consistent with your daily routine today and ensuring your bedtime snack is not skipped tonight.';
   } else if(diff<-2){
     if(pt){pt.textContent='Falling';pt.className='pressure-trend trend-falling';}
     if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — moderate change';
@@ -903,7 +903,7 @@ function fetchPressure(){
   } else if(diff>3){
     if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}
     if(pn) pn.textContent='Rising '+diff.toFixed(0)+'hPa — pressure stabilising';
-    if(pa) pa.textContent='Rising pressure is generally less associated with migraine onset. Continue your normal protocol.';
+    if(pa) pa.textContent='Rising pressure is generally less associated with migraine onset. Continue your normal routine.';
   } else {
     if(pt){pt.textContent='Stable';pt.className='pressure-trend trend-stable';}
     if(pn) pn.textContent='No significant pressure change in 24hrs';
@@ -954,7 +954,7 @@ function launchApp(tab){
   if(profile.age){const ra=document.getElementById('report-age');if(ra)ra.textContent=profile.age;}
   const b=document.getElementById('event-context-banner');
   const todayLog=JSON.parse(localStorage.getItem('lucid-log-'+new Date().toDateString())||'null');
-  if(b&&todayLog){b.style.display='block';b.textContent="Today you logged: "+(todayLog.swam?'swim, ':'')+"protocol "+(todayLog.protocolCount||0)+"/4 taken. Do any feel relevant to this event?";}
+  if(b&&todayLog){b.style.display='block';b.textContent="Today you logged: "+(todayLog.swam?'swim, ':'')+""+(todayLog.protocolCount||0)+"/4 supplements taken. Do any feel relevant to this event?";}
 }
 
 function switchTab(name, btn){
