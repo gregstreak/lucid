@@ -509,7 +509,14 @@ body {
 
 <!-- DAILY LOG -->
 <div id="main-log" class="main-screen active">
-  <div class="today-date" id="today-label"></div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:10px">
+    <div>
+      <div style="font-size:10px;font-weight:500;color:var(--text-light);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Logging for</div>
+      <input type="date" id="log-date" class="input-field" style="width:auto;font-size:13px;padding:6px 10px" onchange="checkExistingLog()">
+    </div>
+    <div id="log-status" style="font-size:11px;padding:4px 10px;border-radius:8px;display:none"></div>
+  </div>
 
   <div class="section-label">Daily routine</div>
   <div class="card" id="protocol-card">
@@ -597,7 +604,7 @@ body {
   <div class="section-note">From your profile — did any occur today?</div>
   <div class="card"><div class="flag-grid"><button class="flag-btn" onclick="this.classList.toggle('selected')">Aged cheese</button></div></div>
 
-  <button class="btn-primary" onclick="saveLog()">Save today's log</button>
+  <button class="btn-primary" id="save-log-btn" onclick="saveLog()">Save log</button>
 </div>
 
 <!-- EVENT LOG -->
@@ -704,6 +711,9 @@ body {
     <div class="event-item"><div class="event-time">18 Apr, 03:00</div><div class="event-title">Migraine — severity 7, triptan at 2 hrs</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
     <div class="event-item"><div class="event-time">11 Apr, 03:30</div><div class="event-title">Migraine — severity 6, Migril under 30 min</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
   </div>
+
+  <div class="section-label">Past entries</div>
+  <div id="past-entries-list"></div>
 
   <div class="section-label">Emerging pattern</div>
   <div class="analysis-card" id="analysis-card">
@@ -948,6 +958,13 @@ function launchApp(tab){
   document.getElementById('app-nav').classList.add('visible');
   switchTab(tab, document.getElementById('nav-'+tab));
   fetchPressure();
+  const dp=document.getElementById('log-date');
+  if(dp&&!dp.value){
+    const now=new Date();
+    dp.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    checkExistingLog();
+  }
+  renderPastEntries();
   const rn=document.getElementById('report-name');
   const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
   if(rn&&profile.name) rn.textContent=profile.name;
@@ -1021,21 +1038,116 @@ function saveSupps(){
   });
   localStorage.setItem('lucid-supps',JSON.stringify(supps));
 }
+function getLogDate(){
+  const dp=document.getElementById('log-date');
+  if(dp&&dp.value){
+    const d=new Date(dp.value+'T12:00:00');
+    return d.toDateString();
+  }
+  return new Date().toDateString();
+}
+
+function checkExistingLog(){
+  const dateStr=getLogDate();
+  const existing=localStorage.getItem('lucid-log-'+dateStr);
+  const status=document.getElementById('log-status');
+  const btn=document.getElementById('save-log-btn');
+  const dp=document.getElementById('log-date');
+  const today=new Date().toDateString();
+  if(existing){
+    if(status){status.style.display='block';status.style.background='var(--dawn-light)';status.style.color='var(--dawn-dark)';status.style.border='1px solid #E8C4A4';status.textContent='Already logged — saving will update';}
+    if(btn) btn.textContent='Update entry';
+  } else {
+    if(status){status.style.display='none';}
+    if(btn) btn.textContent=dateStr===today?'Save log':'Save past entry';
+  }
+}
+
 function saveLog(){
+  const dateStr=getLogDate();
+  const isNew=!localStorage.getItem('lucid-log-'+dateStr);
   const logData={
-    date:new Date().toDateString(),
+    date:dateStr,
     swam:document.getElementById('swim-tog').classList.contains('on'),
     swimDist:document.getElementById('swim-dist').value,
     swimTemp:document.getElementById('swim-temp').value,
     sleep:C.sleep,water:C.water,coffee:C.coffee,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length
   };
-  localStorage.setItem('lucid-log-'+logData.date,JSON.stringify(logData));
-  const entries=JSON.parse(localStorage.getItem('lucid-entry-count')||'0');
-  const newCount=entries+1;
-  localStorage.setItem('lucid-entry-count',newCount);
-  updateProgress(newCount);
-  showToast('Today logged ✓');
+  localStorage.setItem('lucid-log-'+dateStr,JSON.stringify(logData));
+  if(isNew){
+    const entries=parseInt(localStorage.getItem('lucid-entry-count')||'0');
+    const newCount=entries+1;
+    localStorage.setItem('lucid-entry-count',newCount);
+    updateProgress(newCount);
+  }
+  checkExistingLog();
+  renderPastEntries();
+  const today=new Date().toDateString();
+  showToast(dateStr===today?'Today logged ✓':'Past entry saved ✓');
+}
+
+function renderPastEntries(){
+  const list=document.getElementById('past-entries-list');
+  if(!list) return;
+  const entries=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('lucid-log-')){
+      try{
+        const entry=JSON.parse(localStorage.getItem(key));
+        entries.push(entry);
+      }catch(e){}
+    }
+  }
+  entries.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(entries.length===0){
+    list.innerHTML='<div style="font-size:13px;color:var(--text-light);padding:.5rem 0">No entries yet — start logging to see your history here.</div>';
+    return;
+  }
+  list.innerHTML=entries.slice(0,10).map(e=>{
+    const d=new Date(e.date);
+    const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+    const swim=e.swam?'Swim '+( e.swimDist?e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
+    const sleep=e.sleep?e.sleep+'h sleep':'';
+    const supps=e.protocolCount?e.protocolCount+'/4 supplements':'';
+    const details=[swim,sleep,supps].filter(Boolean).join(' · ');
+    return `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="loadEntryForEdit('${e.date}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}</div>
+        <div style="font-size:11px;color:var(--teal);background:var(--teal-light);padding:2px 8px;border-radius:6px">Edit</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-light)">${details}</div>
+    </div>`;
+  }).join('');
+}
+
+function loadEntryForEdit(dateStr){
+  const dp=document.getElementById('log-date');
+  if(dp){
+    const d=new Date(dateStr);
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    dp.value=y+'-'+m+'-'+day;
+  }
+  const existing=JSON.parse(localStorage.getItem('lucid-log-'+dateStr)||'null');
+  if(existing){
+    if(existing.swam){
+      const st=document.getElementById('swim-tog');
+      if(st&&!st.classList.contains('on')){st.classList.add('on');toggleEl('swim-det',st);}
+      const sd=document.getElementById('swim-dist');
+      const stemp=document.getElementById('swim-temp');
+      if(sd) sd.value=existing.swimDist||'';
+      if(stemp) stemp.value=existing.swimTemp||'';
+    }
+    if(existing.sleep) {C.sleep=existing.sleep;const sv=document.getElementById('sleep-val');if(sv)sv.textContent=existing.sleep;}
+    if(existing.water!=null){C.water=existing.water;const wv=document.getElementById('water-val');if(wv)wv.textContent=existing.water;}
+  }
+  switchTab('log',document.getElementById('nav-log'));
+  checkExistingLog();
+  window.scrollTo(0,0);
+  showToast('Entry loaded — edit and save to update');
 }
 function saveEvent(){showToast('Event saved ✓');}
 function updateProgress(count){
