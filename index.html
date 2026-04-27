@@ -1235,7 +1235,8 @@ function renderPersonalTriggers(){
 }
 
 function openSettings(){
-  document.querySelectorAll('.screen,.ob-screen,.main-screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.screen,.ob-screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.main-screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('app-nav').classList.remove('visible');
   document.getElementById('screen-settings').classList.add('active');
   populateSettings();
@@ -1302,6 +1303,8 @@ function saveSettings(){
   renderExercise();
   renderPersonalTriggers();
 }
+
+function getLogDate(){
   const dp=document.getElementById('log-date');
   if(dp&&dp.value){
     const d=new Date(dp.value+'T12:00:00');
@@ -1329,11 +1332,14 @@ function checkExistingLog(){
 function saveLog(){
   const dateStr=getLogDate();
   const isNew=!localStorage.getItem('lucid-log-'+dateStr);
+  const swimDist=document.getElementById('swim-dist');
+  const swimTemp=document.getElementById('swim-temp');
+  const swimTog=document.getElementById('swim-tog');
   const logData={
     date:dateStr,
-    swam:document.getElementById('swim-tog').classList.contains('on'),
-    swimDist:document.getElementById('swim-dist').value,
-    swimTemp:document.getElementById('swim-temp').value,
+    swam:swimTog?swimTog.classList.contains('on'):false,
+    swimDist:swimDist?swimDist.value:'',
+    swimTemp:swimTemp?swimTemp.value:'',
     sleep:C.sleep,water:C.water,coffee:C.coffee,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
     suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length
@@ -1397,15 +1403,17 @@ function loadEntryForEdit(dateStr){
   }
   const existing=JSON.parse(localStorage.getItem('lucid-log-'+dateStr)||'null');
   if(existing){
-    if(existing.swam){
-      const st=document.getElementById('swim-tog');
-      if(st&&!st.classList.contains('on')){st.classList.add('on');toggleEl('swim-det',st);}
-      const sd=document.getElementById('swim-dist');
-      const stemp=document.getElementById('swim-temp');
-      if(sd) sd.value=existing.swimDist||'';
-      if(stemp) stemp.value=existing.swimTemp||'';
+    const swimTog=document.getElementById('swim-tog');
+    if(existing.swam&&swimTog&&!swimTog.classList.contains('on')){
+      swimTog.classList.add('on');
+      const swimDet=document.getElementById('swim-det');
+      if(swimDet) swimDet.style.display='block';
     }
-    if(existing.sleep) {C.sleep=existing.sleep;const sv=document.getElementById('sleep-val');if(sv)sv.textContent=existing.sleep;}
+    const sd=document.getElementById('swim-dist');
+    const stemp=document.getElementById('swim-temp');
+    if(sd&&existing.swimDist) sd.value=existing.swimDist;
+    if(stemp&&existing.swimTemp) stemp.value=existing.swimTemp;
+    if(existing.sleep){C.sleep=existing.sleep;const sv=document.getElementById('sleep-val');if(sv)sv.textContent=existing.sleep;}
     if(existing.water!=null){C.water=existing.water;const wv=document.getElementById('water-val');if(wv)wv.textContent=existing.water;}
   }
   switchTab('log',document.getElementById('nav-log'));
