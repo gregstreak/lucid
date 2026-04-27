@@ -703,11 +703,11 @@ body {
   </div>
 
   <div class="section-label" style="margin-top:0">This month</div>
-  <div class="stat-grid">
-    <div class="stat-card"><div class="stat-label">Migraines</div><div class="stat-value">2</div><div class="stat-sub stat-up">↓ 3 vs last month</div></div>
-    <div class="stat-card"><div class="stat-label">Routine compliance</div><div class="stat-value">87%</div><div class="stat-sub stat-up">↑ 12% vs last month</div></div>
-    <div class="stat-card"><div class="stat-label">Swim days</div><div class="stat-value">14</div><div class="stat-sub">this month</div></div>
-    <div class="stat-card"><div class="stat-label">Avg severity</div><div class="stat-value">4.5</div><div class="stat-sub stat-up">↓ 2.7 vs last month</div></div>
+  <div class="stat-grid" id="dash-stat-grid">
+    <div class="stat-card"><div class="stat-label">Migraines</div><div class="stat-value" id="stat-migraines">—</div><div class="stat-sub" id="stat-migraines-sub"></div></div>
+    <div class="stat-card"><div class="stat-label">Routine compliance</div><div class="stat-value" id="stat-compliance">—</div><div class="stat-sub" id="stat-compliance-sub"></div></div>
+    <div class="stat-card"><div class="stat-label">Swim days</div><div class="stat-value" id="stat-swims">—</div><div class="stat-sub" id="stat-swims-sub">this month</div></div>
+    <div class="stat-card"><div class="stat-label">Avg severity</div><div class="stat-value" id="stat-severity">—</div><div class="stat-sub" id="stat-severity-sub"></div></div>
   </div>
 
   <div class="section-label" id="pressure-label">Barometric pressure</div>
@@ -726,7 +726,7 @@ body {
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-light);line-height:1.6" id="pressure-advice"></div>
   </div>
 
-  <div class="section-label">April 2026</div>
+  <div class="section-label" id="cal-title">April 2026</div>
   <div class="card">
     <div style="display:flex;justify-content:space-around;margin-bottom:6px"><span style="font-size:10px;color:var(--text-light)">M</span><span style="font-size:10px;color:var(--text-light)">T</span><span style="font-size:10px;color:var(--text-light)">W</span><span style="font-size:10px;color:var(--text-light)">T</span><span style="font-size:10px;color:var(--text-light)">F</span><span style="font-size:10px;color:var(--text-light)">S</span><span style="font-size:10px;color:var(--text-light)">S</span></div>
     <div class="cal-grid" id="cal-grid"></div>
@@ -766,10 +766,8 @@ body {
   </div>
 
   <div class="section-label" id="recent-events-section">Recent events</div>
-  <div class="card">
-    <div class="event-item"><div class="event-time">Today, 05:00</div><div class="event-title">Pre-migraine — neck stiffness, severity 3</div><span class="badge badge-pre">Pre-migraine</span></div>
-    <div class="event-item"><div class="event-time">18 Apr, 03:00</div><div class="event-title">Migraine — severity 7, triptan at 2 hrs</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
-    <div class="event-item"><div class="event-time">11 Apr, 03:30</div><div class="event-title">Migraine — severity 6, Migril under 30 min</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
+  <div id="recent-events-card" class="card">
+    <div style="font-size:13px;color:var(--text-light);font-style:italic">No events logged yet — use the Event tab to log a migraine episode.</div>
   </div>
 
   <div class="section-label">Past entries</div>
@@ -796,69 +794,11 @@ body {
     </div>
     <div>
       <div class="report-title-text">lucid</div>
-      <div class="report-subtitle">Patient report — 90 day summary</div>
+      <div class="report-subtitle" id="report-subtitle">Patient report</div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="report-section">
-      <div class="report-section-title">Patient profile</div>
-      <div class="report-row"><span class="report-key">Name</span><span class="report-val" id="report-name">—</span></div>
-      <div class="report-row"><span class="report-key">Age range</span><span class="report-val" id="report-age">55–64</span></div>
-      <div class="report-row"><span class="report-key">Years suffering</span><span class="report-val">20+ years</span></div>
-      <div class="report-row"><span class="report-key">Report period</span><span class="report-val">Jan 26 – Apr 25, 2026</span></div>
-      <div class="report-row"><span class="report-key">Days logged</span><span class="report-val">67 of 90 (74%)</span></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="report-section">
-      <div class="report-section-title">Migraine frequency</div>
-      <div class="report-row"><span class="report-key">Total migraines</span><span class="report-val">8</span></div>
-      <div class="report-row"><span class="report-key">Monthly average</span><span class="report-val">2.7</span></div>
-      <div class="report-row"><span class="report-key">Previous 90 days</span><span class="report-val">14</span></div>
-      <div class="report-row"><span class="report-key">Trend</span><span class="report-val" style="color:var(--teal)">↓ 43% reduction</span></div>
-      <div class="report-row"><span class="report-key">Avg severity</span><span class="report-val">4.5 / 10</span></div>
-      <div class="report-row"><span class="report-key">Most common onset time</span><span class="report-val">02:00–04:00</span></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="report-section">
-      <div class="report-section-title">Current prevention protocol</div>
-      <div class="report-row"><span class="report-key">Magnesium glycinate</span><span class="report-val">300mg nightly</span></div>
-      <div class="report-row"><span class="report-key">Riboflavin B2</span><span class="report-val">400mg daily</span></div>
-      <div class="report-row"><span class="report-key">CoQ10 ubiquinol</span><span class="report-val">200mg with meal</span></div>
-      <div class="report-row"><span class="report-key">Ginger root</span><span class="report-val">540mg nightly</span></div>
-      <div class="report-row"><span class="report-key">Protocol compliance</span><span class="report-val">87% (58 of 67 logged days)</span></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="report-section">
-      <div class="report-section-title">Acute medication use</div>
-      <div class="report-row"><span class="report-key">Migril uses</span><span class="report-val">5 of 8 events</span></div>
-      <div class="report-row"><span class="report-key">Triptan uses</span><span class="report-val">3 of 8 events</span></div>
-      <div class="report-row"><span class="report-key">Avg time to treatment</span><span class="report-val">47 minutes</span></div>
-      <div class="report-row"><span class="report-key">Overuse threshold (10/month)</span><span class="report-val" style="color:var(--teal)">Within safe range</span></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="report-section">
-      <div class="report-section-title">Identified correlations</div>
-      <div class="report-row"><span class="report-key">Post-swim events (within 20hrs)</span><span class="report-val">5 of 8 (63%)</span></div>
-      <div class="report-row"><span class="report-key">Bedtime snack missed</span><span class="report-val">4 of those 5 days</span></div>
-      <div class="report-row"><span class="report-key">Water temp below 15°C</span><span class="report-val">2 of those 5 days</span></div>
-      <div class="report-row"><span class="report-key">Barometric drop >5hPa/24hr</span><span class="report-val">3 of 8 events (38%)</span></div>
-      <div class="report-row"><span class="report-key">Sleep under 6 hours prior</span><span class="report-val">4 of 8 events (50%)</span></div>
-    </div>
-  </div>
-
-  <div class="analysis-card">
-    <div class="analysis-title">Pattern summary for clinical review</div>
-    <div class="analysis-body">Migraine frequency has reduced 43% since beginning the prevention protocol 90 days ago. The strongest correlations are post-exercise onset (particularly cold water swimming) and nights when the pre-sleep carbohydrate snack was omitted. Barometric pressure drops appear as a secondary but consistent factor. Protocol compliance correlates positively with lower frequency weeks.</div>
-  </div>
+  <div id="report-body"></div>
 
   <div class="card" style="background:var(--teal-light);border-color:var(--teal-mid)">
     <div style="font-size:13px;color:var(--teal-deeper);font-weight:500;margin-bottom:4px">Share with your doctor</div>
@@ -981,23 +921,97 @@ if(ot) ot.value = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes()
 const rd = document.getElementById('report-date');
 if(rd) rd.textContent = now.toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
 
-const sBar = document.getElementById('streak-bar');
-if(sBar){['M','T','W','T','F','S','S','M','T','W','T','F','S','T'].forEach((d,i)=>{
-  const e=document.createElement('div');
-  e.className='streak-day '+['done','done','migraine','done','done','miss','done','done','done','miss','done','done','done','today'][i];
-  e.textContent=d; sBar.appendChild(e);
-});}
+const rd = document.getElementById('report-date');
+if(rd) rd.textContent = now.toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
 
-const cg = document.getElementById('cal-grid');
-if(cg){
-  const st={3:'c',4:'c',5:'m',6:'c',7:'c',8:'n',9:'c',10:'c',11:'m',12:'c',13:'c',14:'c',15:'c',16:'n',17:'c',18:'m',19:'c',20:'c',21:'c',22:'c',23:'c',24:'c',25:'t'};
-  for(let i=0;i<2;i++){const e=document.createElement('div');e.className='cal-day empty';cg.appendChild(e);}
-  for(let d=1;d<=25;d++){
-    const e=document.createElement('div'); const s=st[d]||'';
-    e.className='cal-day'+(s==='c'||s==='t'?' clean':'')+(s==='n'?' near':'')+(s==='m'?' migraine':'')+(s==='t'?' today':'');
-    e.textContent=d; cg.appendChild(e);
+function renderStreakAndCalendar(){
+  // Gather logs and episodes
+  const logs={};
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('lucid-log-')){
+      try{const l=JSON.parse(localStorage.getItem(key));logs[l.date]=l;}catch(e){}
+    }
+  }
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const migraineDates=new Set(episodes.filter(e=>e.type==='migraine').map(e=>new Date(e.date).toDateString()));
+
+  // Streak — last 14 days
+  const sBar=document.getElementById('streak-bar');
+  if(sBar){
+    sBar.innerHTML='';
+    const today=new Date();
+    for(let i=13;i>=0;i--){
+      const d=new Date(today);
+      d.setDate(today.getDate()-i);
+      const dateStr=d.toDateString();
+      const dayLabel=['S','M','T','W','T','F','S'][d.getDay()];
+      const e=document.createElement('div');
+      const isMigraine=migraineDates.has(dateStr);
+      const isLogged=!!logs[dateStr];
+      const isToday=i===0;
+      e.className='streak-day'+(isMigraine?' migraine':isLogged?' done':' miss')+(isToday?' today':'');
+      e.textContent=dayLabel;
+      sBar.appendChild(e);
+    }
+  }
+
+  // Calendar — current month
+  const cg=document.getElementById('cal-grid');
+  const calLabel=document.querySelector('#main-dash .section-label[id="cal-section"]');
+  if(cg){
+    cg.innerHTML='';
+    const today=new Date();
+    const year=today.getFullYear();
+    const month=today.getMonth();
+    const monthName=today.toLocaleDateString('en-ZA',{month:'long',year:'numeric'}).toUpperCase();
+    const calTitle=document.getElementById('cal-title');
+    if(calTitle) calTitle.textContent=monthName;
+    const firstDay=new Date(year,month,1).getDay();
+    const offset=firstDay===0?6:firstDay-1;
+    const daysInMonth=new Date(year,month+1,0).getDate();
+    for(let i=0;i<offset;i++){const e=document.createElement('div');e.className='cal-day empty';cg.appendChild(e);}
+    for(let d=1;d<=daysInMonth;d++){
+      const dateStr=new Date(year,month,d).toDateString();
+      const e=document.createElement('div');
+      const isMigraine=migraineDates.has(dateStr);
+      const isLogged=!!logs[dateStr];
+      const isToday=d===today.getDate();
+      const isFuture=d>today.getDate();
+      e.className='cal-day'+(isMigraine?' migraine':isLogged?' clean':isFuture?' empty':'');
+      if(isToday) e.classList.add('today');
+      if(!isFuture||isToday) e.textContent=d;
+      cg.appendChild(e);
+    }
   }
 }
+
+function renderRecentEvents(){
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const card=document.getElementById('recent-events-card');
+  if(!card) return;
+  if(!episodes.length){
+    card.innerHTML='<div style="font-size:13px;color:var(--text-light);font-style:italic">No events logged yet — use the Event tab to log a migraine episode.</div>';
+    return;
+  }
+  const sorted=[...episodes].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  card.innerHTML=sorted.map(ep=>{
+    const d=new Date(ep.date);
+    const label=d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+    const time=ep.onsetTime?', '+ep.onsetTime:'';
+    const typeLabel=ep.type==='migraine'?'Migraine':'Warning signs';
+    const badgeClass=ep.type==='migraine'?'badge-migraine':'badge-pre';
+    const sev=ep.severity?'severity '+ep.severity:'';
+    const meds=(ep.steps||[]).filter(s=>s.medication).map(s=>s.medication).join(' → ');
+    const outcome=ep.outcome||'';
+    return `<div class="event-item">
+      <div class="event-time">${label}${time}</div>
+      <div class="event-title">${sev?sev+' · ':''}${meds||'No treatment logged'}</div>
+      <span class="badge ${badgeClass}">${typeLabel}</span>${outcome?` <span class="badge badge-resolved">${outcome}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
 
 function buildPressureBars(vals){
   const pb = document.getElementById('pressure-bars');
@@ -1016,14 +1030,14 @@ function buildPressureBars(vals){
 function fetchPressure(){
   const mockVals=[1013,1011,1009,1007,1010,1012,1013];
   buildPressureBars(mockVals);
-  const current=mockVals[mockVals.length-1];
-  const prev=mockVals[mockVals.length-2];
-  const diff=current-prev;
   const pv=document.getElementById('pressure-val');
   const pt=document.getElementById('pressure-trend-badge');
   const pn=document.getElementById('pressure-note');
   const pa=document.getElementById('pressure-advice');
-  if(pv) pv.textContent=current;
+  if(pv) pv.textContent='—';
+  if(pt){pt.textContent='Loading';pt.className='pressure-trend trend-stable';}
+  if(pn) pn.textContent='Fetching current pressure data…';
+  if(pa) pa.textContent='';
   if(diff<-5){
     if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}
     if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — significant change';
@@ -1102,12 +1116,12 @@ function launchApp(tab){
   renderRoutine();
   renderExercise();
   renderPersonalTriggers();
+  renderReport();
+  renderDashStats();
+  renderStreakAndCalendar();
+  renderRecentEvents();
   const ep=localStorage.getItem('lucid-active-episode');
   if(ep) showActiveEpisode();
-  const rn=document.getElementById('report-name');
-  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
-  if(rn&&profile.name) rn.textContent=profile.name;
-  if(profile.age){const ra=document.getElementById('report-age');if(ra)ra.textContent=profile.age;}
   const b=document.getElementById('event-context-banner');
   const todayLog=JSON.parse(localStorage.getItem('lucid-log-'+new Date().toDateString())||'null');
   if(b&&todayLog){b.style.display='block';b.textContent="Today you logged: "+(todayLog.swam?'swim, ':'')+""+(todayLog.protocolCount||0)+"/4 supplements taken. Do any feel relevant to this event?";}
@@ -1118,6 +1132,8 @@ function switchTab(name, btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('main-'+name).classList.add('active');
   if(btn) btn.classList.add('active');
+  if(name==='report') renderReport();
+  if(name==='dash'){renderDashStats();renderStreakAndCalendar();renderRecentEvents();}
 }
 
 function toggleEl(id,btn){
@@ -1177,6 +1193,206 @@ function saveSupps(){
   });
   localStorage.setItem('lucid-supps',JSON.stringify(supps));
 }
+function renderReport(){
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const unlocked=localStorage.getItem('lucid-unlocked')==='true';
+
+  // Gather all daily logs
+  const logs=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('lucid-log-')){
+      try{logs.push(JSON.parse(localStorage.getItem(key)));}catch(e){}
+    }
+  }
+  logs.sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  const totalLogs=logs.length;
+  const firstEntry=logs.length?new Date(logs[0].date):null;
+  const lastEntry=logs.length?new Date(logs[logs.length-1].date):null;
+  const daysSinceFirst=firstEntry?Math.round((new Date()-firstEntry)/(1000*60*60*24)):0;
+  const periodLabel=firstEntry&&lastEntry
+    ? firstEntry.toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'})+' – '+lastEntry.toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'})
+    : 'No entries yet';
+
+  // Supplement compliance
+  const totalSupps=supps.length||4;
+  const fullCompliance=logs.filter(l=>l.protocolCount>=totalSupps).length;
+  const partialCompliance=logs.filter(l=>l.protocolCount>0&&l.protocolCount<totalSupps).length;
+  const compliancePct=totalLogs?Math.round((fullCompliance/totalLogs)*100):0;
+
+  // Sleep
+  const sleepLogs=logs.filter(l=>l.sleep);
+  const avgSleep=sleepLogs.length?(sleepLogs.reduce((a,l)=>a+l.sleep,0)/sleepLogs.length).toFixed(1):null;
+
+  // Swim data
+  const swimDays=logs.filter(l=>l.swam);
+  const swimTemps=swimDays.filter(l=>l.swimTemp).map(l=>parseFloat(l.swimTemp));
+  const avgTemp=swimTemps.length?(swimTemps.reduce((a,b)=>a+b,0)/swimTemps.length).toFixed(1):null;
+  const coldSwims=swimTemps.filter(t=>t<15).length;
+
+  // Episodes
+  const migraines=episodes.filter(e=>e.type==='migraine');
+  const warnings=episodes.filter(e=>e.type==='warning');
+  const severities=migraines.filter(e=>e.severity).map(e=>parseInt(e.severity));
+  const avgSeverity=severities.length?(severities.reduce((a,b)=>a+b,0)/severities.length).toFixed(1):null;
+
+  // Medication from episodes
+  const allMeds=[];
+  episodes.forEach(ep=>{(ep.steps||[]).forEach(s=>{if(s.medication) allMeds.push(s.medication.toLowerCase());});});
+  const migrilCount=allMeds.filter(m=>m.includes('migril')).length;
+  const riptanCount=allMeds.filter(m=>m.includes('triptan')||m.includes('rizat')||m.includes('rizag')||m.includes('sumat')||m.includes('relpax')||m.includes('zomig')).length;
+  const totalMedUses=allMeds.length;
+  const thisMonth=new Date();
+  const monthEpisodes=episodes.filter(e=>{
+    const d=new Date(e.date);
+    return d.getMonth()===thisMonth.getMonth()&&d.getFullYear()===thisMonth.getFullYear();
+  });
+  const monthMedUses=monthEpisodes.reduce((a,ep)=>a+(ep.steps||[]).filter(s=>s.medication).length,0);
+
+  // Onset times
+  const onsetTimes=migraines.filter(e=>e.onsetTime).map(e=>parseInt(e.onsetTime.split(':')[0]));
+  const nightOnset=onsetTimes.filter(h=>h>=0&&h<=5).length;
+  const onsetPattern=onsetTimes.length?(nightOnset/onsetTimes.length*100).toFixed(0)+'% between midnight and 5am':'—';
+
+  const pending=`<span style="color:var(--text-light);font-style:italic">Pending — unlocks with AI analysis</span>`;
+  const notEnough=`<span style="color:var(--text-light);font-style:italic">Not enough data yet</span>`;
+
+  const rs=document.getElementById('report-subtitle');
+  if(rs) rs.textContent=totalLogs>0?'Patient report — '+totalLogs+' entries logged':'Patient report — no entries yet';
+
+  const rb=document.getElementById('report-body');
+  if(!rb) return;
+
+  rb.innerHTML=`
+    <div class="card">
+      <div class="report-section">
+        <div class="report-section-title">Patient profile</div>
+        <div class="report-row"><span class="report-key">Name</span><span class="report-val">${profile.name||'—'}</span></div>
+        <div class="report-row"><span class="report-key">Age range</span><span class="report-val">${profile.age||'—'}</span></div>
+        <div class="report-row"><span class="report-key">Years suffering</span><span class="report-val">${profile.years||'—'}</span></div>
+        <div class="report-row"><span class="report-key">Logging period</span><span class="report-val">${periodLabel}</span></div>
+        <div class="report-row"><span class="report-key">Days logged</span><span class="report-val">${totalLogs}${daysSinceFirst>0?' of '+daysSinceFirst+' days':''}</span></div>
+        <div class="report-row"><span class="report-key">Avg sleep logged</span><span class="report-val">${avgSleep?avgSleep+'h':notEnough}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="report-section">
+        <div class="report-section-title">Migraine events</div>
+        <div class="report-row"><span class="report-key">Full migraines logged</span><span class="report-val">${migraines.length}</span></div>
+        <div class="report-row"><span class="report-key">Warning sign events</span><span class="report-val">${warnings.length}</span></div>
+        <div class="report-row"><span class="report-key">Avg severity</span><span class="report-val">${avgSeverity?avgSeverity+' / 10':notEnough}</span></div>
+        <div class="report-row"><span class="report-key">Onset pattern</span><span class="report-val">${onsetTimes.length?onsetPattern:notEnough}</span></div>
+        <div class="report-row"><span class="report-key">Frequency trend</span><span class="report-val">${pending}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="report-section">
+        <div class="report-section-title">Prevention supplements</div>
+        ${supps.length
+          ? supps.map(s=>`<div class="report-row"><span class="report-key">${s.name}</span><span class="report-val">${s.dose||'—'}</span></div>`).join('')
+          : `<div class="report-row"><span class="report-key">No supplements added</span><span class="report-val">Add in Settings</span></div>`
+        }
+        <div class="report-row"><span class="report-key">Full compliance days</span><span class="report-val">${totalLogs?fullCompliance+' of '+totalLogs+' days ('+compliancePct+'%)':notEnough}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="report-section">
+        <div class="report-section-title">Exercise</div>
+        <div class="report-row"><span class="report-key">Swim days logged</span><span class="report-val">${swimDays.length}</span></div>
+        <div class="report-row"><span class="report-key">Avg water temperature</span><span class="report-val">${avgTemp?avgTemp+'°C':notEnough}</span></div>
+        <div class="report-row"><span class="report-key">Cold water swims (below 15°C)</span><span class="report-val">${swimTemps.length?coldSwims+' of '+swimTemps.length:notEnough}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="report-section">
+        <div class="report-section-title">Acute medication use</div>
+        ${totalMedUses>0
+          ? `<div class="report-row"><span class="report-key">Migril uses logged</span><span class="report-val">${migrilCount}</span></div>
+             <div class="report-row"><span class="report-key">Triptan uses logged</span><span class="report-val">${riptanCount}</span></div>
+             <div class="report-row"><span class="report-key">This month</span><span class="report-val">${monthMedUses} use${monthMedUses!==1?'s':''}</span></div>
+             <div class="report-row"><span class="report-key">Overuse threshold (10/month)</span><span class="report-val" style="color:${monthMedUses<10?'var(--teal)':'var(--coral)'}">${monthMedUses<10?'Within safe range':'Approaching threshold'}</span></div>`
+          : `<div class="report-row"><span class="report-key">No medication steps logged yet</span><span class="report-val">Log in Event tab</span></div>`
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="report-section">
+        <div class="report-section-title">Pattern correlations</div>
+        <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${pending}</span></div>
+        <div class="report-row"><span class="report-key">Bedtime snack correlation</span><span class="report-val">${pending}</span></div>
+        <div class="report-row"><span class="report-key">Barometric pressure correlation</span><span class="report-val">${pending}</span></div>
+        <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${pending}</span></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">Correlations calculate at 20 entries and unlock with AI analysis.</div>
+    </div>
+
+    ${unlocked
+      ? `<div class="analysis-card">
+          <div class="analysis-title">Pattern summary for clinical review</div>
+          <div class="analysis-body" id="report-pattern-summary">Your AI analysis findings will appear here.</div>
+        </div>`
+      : `<div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem">
+          <div style="font-size:13px;font-weight:500;color:var(--dawn-dark);margin-bottom:6px">Pattern summary</div>
+          <div style="font-size:13px;color:#8A4A20;line-height:1.6">The pattern summary generates from your real data after 20 entries and AI analysis unlock. Everything above reflects your actual logged data.</div>
+        </div>`
+    }`;
+}
+
+function renderDashStats(){
+  const now=new Date();
+  const thisMonth=now.getMonth();
+  const thisYear=now.getFullYear();
+  const lastMonth=thisMonth===0?11:thisMonth-1;
+  const lastMonthYear=thisMonth===0?thisYear-1:thisYear;
+  const logs=[];
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('lucid-log-')){
+      try{logs.push(JSON.parse(localStorage.getItem(key)));}catch(e){}
+    }
+  }
+  const thisMonthLogs=logs.filter(l=>{const d=new Date(l.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  const lastMonthLogs=logs.filter(l=>{const d=new Date(l.date);return d.getMonth()===lastMonth&&d.getFullYear()===lastMonthYear;});
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  const totalSupps=supps.length||4;
+  const thisCompliance=thisMonthLogs.length?Math.round((thisMonthLogs.filter(l=>l.protocolCount>=totalSupps).length/thisMonthLogs.length)*100):null;
+  const lastCompliance=lastMonthLogs.length?Math.round((lastMonthLogs.filter(l=>l.protocolCount>=totalSupps).length/lastMonthLogs.length)*100):null;
+  const thisSwims=thisMonthLogs.filter(l=>l.swam).length;
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const thisEpisodes=episodes.filter(e=>{const d=new Date(e.date);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear&&e.type==='migraine';});
+  const lastEpisodes=episodes.filter(e=>{const d=new Date(e.date);return d.getMonth()===lastMonth&&d.getFullYear()===lastMonthYear&&e.type==='migraine';});
+  const severities=thisEpisodes.filter(e=>e.severity).map(e=>parseInt(e.severity));
+  const avgSev=severities.length?(severities.reduce((a,b)=>a+b,0)/severities.length).toFixed(1):null;
+  const sm=document.getElementById('stat-migraines');
+  const sms=document.getElementById('stat-migraines-sub');
+  if(sm) sm.textContent=thisEpisodes.length;
+  if(sms){
+    if(lastEpisodes.length>0){const diff=thisEpisodes.length-lastEpisodes.length;sms.textContent=(diff<=0?'↓ '+Math.abs(diff):'↑ '+diff)+' vs last month';sms.className='stat-sub '+(diff<=0?'stat-up':'stat-down');}
+    else sms.textContent='logged this month';
+  }
+  const sc=document.getElementById('stat-compliance');
+  const scs=document.getElementById('stat-compliance-sub');
+  if(sc) sc.textContent=thisCompliance!==null?thisCompliance+'%':'—';
+  if(scs){
+    if(lastCompliance!==null&&thisCompliance!==null){const diff=thisCompliance-lastCompliance;scs.textContent=(diff>=0?'↑ '+diff:'↓ '+Math.abs(diff))+'% vs last month';scs.className='stat-sub '+(diff>=0?'stat-up':'stat-down');}
+    else scs.textContent=thisMonthLogs.length?thisMonthLogs.length+' days logged':'no logs yet';
+  }
+  const ss=document.getElementById('stat-swims');
+  if(ss) ss.textContent=thisSwims;
+  const sv=document.getElementById('stat-severity');
+  const svs=document.getElementById('stat-severity-sub');
+  if(sv) sv.textContent=avgSev||'—';
+  if(svs) svs.textContent=avgSev?'avg this month':'no episodes logged';
+}
+
 function renderRoutine(){
   const card=document.getElementById('protocol-card');
   if(!card) return;
@@ -1448,6 +1664,9 @@ function saveEvent(){
   localStorage.setItem('lucid-episodes',JSON.stringify(episodes));
   clearActiveEpisode();
   renderRecentEpisodes();
+  renderRecentEvents();
+  renderDashStats();
+  renderStreakAndCalendar();
   showToast('Episode saved ✓');
 }
 
