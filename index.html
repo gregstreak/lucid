@@ -921,9 +921,6 @@ if(ot) ot.value = now.getHours().toString().padStart(2,'0')+':'+now.getMinutes()
 const rd = document.getElementById('report-date');
 if(rd) rd.textContent = now.toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
 
-const rd = document.getElementById('report-date');
-if(rd) rd.textContent = now.toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
-
 function renderStreakAndCalendar(){
   // Gather logs and episodes
   const logs={};
