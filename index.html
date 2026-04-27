@@ -777,9 +777,9 @@ body {
 
   <div class="section-label">Emerging pattern</div>
   <div class="analysis-card" id="analysis-card">
-    <div class="analysis-title" id="analysis-title">Early signal — swim days and bedtime snack</div>
-    <div class="analysis-body" id="analysis-body">4 of your 5 migraines occurred within 20 hours of a swim day. On 3 of those days the bedtime snack was not logged. Water temperature below 15°C was recorded on 2 of those days. Routine compliance was below 80% in the 3 days preceding each event.</div>
-    <div class="analysis-meta" id="analysis-meta">Partial pattern — strengthens at 20 entries. Full AI analysis unlocks then.</div>
+    <div class="analysis-title" id="analysis-title">Pattern analysis</div>
+    <div class="analysis-body" id="analysis-body">Not enough data yet. Keep logging daily — the analysis reads across your entries to find correlations between your migraines and your sleep, exercise, supplements, hydration, and nutrition. The signal emerges from consistency over time, not from any single entry.</div>
+    <div class="analysis-meta" id="analysis-meta">Analysis runs at 20 entries.</div>
     <div id="analysis-unlock-cta" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #E8C4A4">
       <button style="width:100%;padding:11px;border-radius:var(--radius-sm);border:none;background:var(--dawn-dark);color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font-sans)" onclick="handleUnlock()">Unlock full analysis — R149 once</button>
     </div>
@@ -1608,6 +1608,8 @@ function updateProgress(count){
   const pl=document.getElementById('progress-label');
   const acta=document.getElementById('analysis-unlock-cta');
   const am=document.getElementById('analysis-meta');
+  const ab=document.getElementById('analysis-body');
+  const at=document.getElementById('analysis-title');
 
   if(pf) pf.style.width=pct+'%';
   if(ec) ec.textContent=count+' / '+target;
@@ -1618,6 +1620,8 @@ function updateProgress(count){
     if(uc) uc.style.display='block';
     if(acta) acta.style.display='block';
     if(am) am.style.display='none';
+    if(at) at.textContent='Your pattern analysis is ready';
+    if(ab) ab.textContent='You have reached 20 entries. Unlock AI analysis to see what your data actually shows — correlations specific to you, not generic migraine advice.';
   } else if(unlocked){
     if(pc) pc.style.display='none';
     if(pl) pl.style.display='none';
@@ -1628,9 +1632,13 @@ function updateProgress(count){
     const pdfBtn=document.getElementById('pdf-btn');
     if(pdfBtn) pdfBtn.onclick=()=>showToast('PDF export coming in next version');
   } else {
-    if(pn){
-      pn.textContent=(target-count)+' more '+(target-count===1?'day':'days')+' until your first pattern analysis';
-    }
+    const remaining=target-count;
+    if(pn) pn.textContent=remaining+' more '+(remaining===1?'day':'days')+' until your first pattern analysis';
+    if(at) at.textContent='Pattern analysis';
+    if(ab) ab.textContent=count===0
+      ?'No entries yet. Start logging daily to build your dataset. The analysis reads across your sleep, exercise, supplements, hydration, and nutrition to find what actually precedes your migraines.'
+      :'Building your dataset — '+count+' of 20 entries logged. Keep going. The analysis runs at 20 entries and correlates your migraines against everything you have logged.';
+    if(am) am.textContent='Analysis runs at 20 entries.';
   }
 }
 
