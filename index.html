@@ -609,39 +609,110 @@ body {
 
 <!-- EVENT LOG -->
 <div id="main-event" class="main-screen">
+
   <div id="event-context-banner" class="migrate-card" style="display:none"></div>
 
-  <div class="section-label" style="margin-top:0">Event type</div>
-  <div class="card"><div class="gap-grid"><button class="gap-btn" id="evt-pre" onclick="selectEvent('pre')">Pre-migraine</button><button class="gap-btn" id="evt-full" onclick="selectEvent('full')">Full migraine</button></div></div>
+  <div style="font-size:18px;font-weight:300;color:var(--text-dark);margin-bottom:.25rem;font-family:var(--font-serif)">Log a migraine episode</div>
+  <div style="font-size:13px;color:var(--text-light);margin-bottom:1.25rem;line-height:1.5">Log each step as it happens, or fill in retrospectively. The sequence matters — onset time, what you took, when, and whether it worked.</div>
 
-  <div class="section-label">Onset time</div>
-  <div class="card"><input class="input-field" type="time" id="onset-time"></div>
-
-  <div class="section-label">Severity (1–10)</div>
-  <div class="card"><div class="sev-row"><button class="sev-btn s1" onclick="selectSev(this)">1</button><button class="sev-btn s2" onclick="selectSev(this)">2</button><button class="sev-btn s3" onclick="selectSev(this)">3</button><button class="sev-btn s4" onclick="selectSev(this)">4</button><button class="sev-btn s5" onclick="selectSev(this)">5</button><button class="sev-btn s6" onclick="selectSev(this)">6</button><button class="sev-btn s7" onclick="selectSev(this)">7</button><button class="sev-btn s8" onclick="selectSev(this)">8</button><button class="sev-btn s9" onclick="selectSev(this)">9</button><button class="sev-btn s10" onclick="selectSev(this)">10</button></div></div>
-
-  <div class="section-label">Early warning signs</div>
-  <div class="card"><div class="flag-grid"><button class="flag-btn" onclick="this.classList.toggle('selected')">Neck stiffness</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Light sensitivity</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Aura / visual</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Nausea</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Fatigue / yawning</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Mood change</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Food craving</button><button class="flag-btn" onclick="this.classList.toggle('selected')">Scalp sensitivity</button></div></div>
-
-  <div class="section-label">Treatment taken</div>
+  <div class="section-label" style="margin-top:0">Onset</div>
   <div class="card">
-    <div class="row"><div class="row-left"><div class="row-label">Migril</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Triptan</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Ginger (acute dose)</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Nothing yet</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row">
+      <div class="row-left"><div class="row-label">Type</div></div>
+      <div class="gap-grid" style="max-width:220px">
+        <button class="gap-btn" id="evt-pre" onclick="selectEvent('pre')">Warning signs</button>
+        <button class="gap-btn" id="evt-full" onclick="selectEvent('full')">Full migraine</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-left"><div class="row-label">Date</div></div>
+      <input type="date" id="event-date" class="input-field" style="width:auto;font-size:13px;padding:6px 10px">
+    </div>
+    <div class="row">
+      <div class="row-left"><div class="row-label">Time</div></div>
+      <input class="input-field" type="time" id="onset-time" style="width:auto">
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <div class="row-left"><div class="row-label">Severity at onset (1–10)</div></div>
+      <div class="sev-row" style="width:100%;margin-top:6px">
+        <button class="sev-btn s1" onclick="selectSev(this)">1</button>
+        <button class="sev-btn s2" onclick="selectSev(this)">2</button>
+        <button class="sev-btn s3" onclick="selectSev(this)">3</button>
+        <button class="sev-btn s4" onclick="selectSev(this)">4</button>
+        <button class="sev-btn s5" onclick="selectSev(this)">5</button>
+        <button class="sev-btn s6" onclick="selectSev(this)">6</button>
+        <button class="sev-btn s7" onclick="selectSev(this)">7</button>
+        <button class="sev-btn s8" onclick="selectSev(this)">8</button>
+        <button class="sev-btn s9" onclick="selectSev(this)">9</button>
+        <button class="sev-btn s10" onclick="selectSev(this)">10</button>
+      </div>
+    </div>
   </div>
 
-  <div class="section-label">How quickly did you treat it?</div>
-  <div class="card"><div class="gap-grid"><button class="gap-btn" onclick="selectOne(this,'timing')">Under 30 min</button><button class="gap-btn" onclick="selectOne(this,'timing')">30–60 min</button><button class="gap-btn" onclick="selectOne(this,'timing')">1–2 hrs</button><button class="gap-btn" onclick="selectOne(this,'timing')">2+ hrs</button></div></div>
+  <div class="section-label">Early warning signs</div>
+  <div class="card">
+    <div class="flag-grid">
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Neck stiffness</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Light sensitivity</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Aura / visual</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Nausea</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Fatigue / yawning</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Mood change</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Food craving</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected')">Scalp sensitivity</button>
+    </div>
+  </div>
 
-  <div class="section-label">Outcome</div>
-  <div class="card"><div class="gap-grid"><button class="gap-btn" onclick="selectOne(this,'outcome')">Fully resolved</button><button class="gap-btn" onclick="selectOne(this,'outcome')">Mostly resolved</button><button class="gap-btn" onclick="selectOne(this,'outcome')">Partial relief</button><button class="gap-btn" onclick="selectOne(this,'outcome')">No relief</button></div></div>
+  <div class="section-label">Treatment timeline</div>
+  <div class="section-note">Add each treatment step with the time taken — in sequence</div>
+  <div id="treatment-steps"></div>
+  <button class="btn-secondary" onclick="addTreatmentStepInline()" style="margin-bottom:.75rem">+ Add treatment step</button>
 
-  <button class="btn-primary" onclick="saveEvent()">Log this event</button>
+  <div class="section-label">Episode outcome</div>
+  <div class="card">
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      <div class="row-left"><div class="row-label">Final outcome</div></div>
+      <div class="gap-grid" style="width:100%;margin-top:6px">
+        <button class="gap-btn" onclick="selectOne(this,'outcome')">Fully resolved</button>
+        <button class="gap-btn" onclick="selectOne(this,'outcome')">Mostly resolved</button>
+        <button class="gap-btn" onclick="selectOne(this,'outcome')">Partial relief</button>
+        <button class="gap-btn" onclick="selectOne(this,'outcome')">No relief</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row-left"><div class="row-label">Resolved by (time)</div></div>
+      <input class="input-field" type="time" id="resolve-time" style="width:auto">
+    </div>
+    <div class="row">
+      <div class="row-left"><div class="row-label">Notes</div></div>
+    </div>
+    <textarea class="textarea-field" id="episode-notes" rows="2" placeholder="Anything else worth noting about this episode…" style="margin-top:4px"></textarea>
+  </div>
+
+  <button class="btn-primary" onclick="saveEvent()">Save episode</button>
 </div>
 
 <!-- DASHBOARD -->
 <div id="main-dash" class="main-screen">
+
+  <div id="active-episode-banner" style="display:none;background:var(--coral-light);border:1px solid var(--coral);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:500;color:#712B13">Active episode</div>
+      <div id="episode-timer" style="font-size:12px;color:var(--coral);font-weight:500"></div>
+    </div>
+    <div id="episode-timeline" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button style="flex:1;padding:9px;border-radius:var(--radius-sm);border:none;background:var(--coral);color:white;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans)" onclick="addTreatmentStep()">+ Log treatment</button>
+      <button style="flex:1;padding:9px;border-radius:var(--radius-sm);border:1px solid var(--coral);background:none;color:var(--coral);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans)" onclick="resolveEpisode()">Mark resolved</button>
+    </div>
+  </div>
+
+  <div id="no-episode-btn" style="margin-bottom:1rem">
+    <button onclick="startEpisode()" style="width:100%;padding:14px;border-radius:var(--radius-lg);border:1px solid var(--coral);background:var(--coral-light);color:#712B13;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px">
+      <span style="font-size:18px">⚡</span> Migraine starting
+    </button>
+  </div>
+
   <div class="section-label" style="margin-top:0">This month</div>
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-label">Migraines</div><div class="stat-value">2</div><div class="stat-sub stat-up">↓ 3 vs last month</div></div>
@@ -705,7 +776,7 @@ body {
     </div>
   </div>
 
-  <div class="section-label">Recent events</div>
+  <div class="section-label" id="recent-events-section">Recent events</div>
   <div class="card">
     <div class="event-item"><div class="event-time">Today, 05:00</div><div class="event-title">Pre-migraine — neck stiffness, severity 3</div><span class="badge badge-pre">Pre-migraine</span></div>
     <div class="event-item"><div class="event-time">18 Apr, 03:00</div><div class="event-title">Migraine — severity 7, triptan at 2 hrs</div><span class="badge badge-migraine">Migraine</span> <span class="badge badge-resolved">Resolved</span></div>
@@ -964,7 +1035,15 @@ function launchApp(tab){
     dp.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
     checkExistingLog();
   }
+  const ed=document.getElementById('event-date');
+  if(ed&&!ed.value){
+    const now=new Date();
+    ed.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  }
   renderPastEntries();
+  renderRecentEpisodes();
+  const ep=localStorage.getItem('lucid-active-episode');
+  if(ep) showActiveEpisode();
   const rn=document.getElementById('report-name');
   const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
   if(rn&&profile.name) rn.textContent=profile.name;
@@ -1149,7 +1228,181 @@ function loadEntryForEdit(dateStr){
   window.scrollTo(0,0);
   showToast('Entry loaded — edit and save to update');
 }
-function saveEvent(){showToast('Event saved ✓');}
+function saveEvent(){
+  const steps=[];
+  document.querySelectorAll('.treatment-step-card').forEach((card,i)=>{
+    steps.push({
+      time:card.querySelector('.step-time')?.value||'',
+      medication:card.querySelector('.step-med')?.value||'',
+      relief:card.querySelector('.step-relief')?.value||''
+    });
+  });
+  const eventDate=document.getElementById('event-date')?.value||new Date().toISOString().split('T')[0];
+  const episode={
+    id:'ep-'+Date.now(),
+    date:eventDate,
+    type:document.getElementById('evt-full')?.classList.contains('selected')?'migraine':'warning',
+    onsetTime:document.getElementById('onset-time')?.value||'',
+    severity:document.querySelector('.sev-btn.sel')?.textContent||'',
+    warnings:Array.from(document.querySelectorAll('#main-event .flag-btn.selected')).map(b=>b.textContent),
+    steps:steps,
+    outcome:document.querySelector('.gap-btn.selected[onclick*="outcome"]')?.textContent||'',
+    resolveTime:document.getElementById('resolve-time')?.value||'',
+    notes:document.getElementById('episode-notes')?.value||''
+  };
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  episodes.unshift(episode);
+  localStorage.setItem('lucid-episodes',JSON.stringify(episodes));
+  clearActiveEpisode();
+  renderRecentEpisodes();
+  showToast('Episode saved ✓');
+}
+
+let treatmentStepCount=0;
+function addTreatmentStepInline(){
+  const container=document.getElementById('treatment-steps');
+  if(!container) return;
+  treatmentStepCount++;
+  const id='step-'+treatmentStepCount;
+  const div=document.createElement('div');
+  div.className='card treatment-step-card';
+  div.style.marginBottom='8px';
+  div.style.position='relative';
+  div.innerHTML=`
+    <button onclick="this.closest('.treatment-step-card').remove()" style="position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:none;cursor:pointer;color:var(--text-light);font-size:13px;display:flex;align-items:center;justify-content:center">×</button>
+    <div style="font-size:11px;font-weight:500;color:var(--text-light);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Step ${treatmentStepCount}</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-end">
+      <div style="flex:1">
+        <div class="food-label" style="margin-bottom:4px">Medication</div>
+        <input class="input-field step-med" type="text" placeholder="e.g. Migril, Rizatriptan, Ginger">
+      </div>
+      <div>
+        <div class="food-label" style="margin-bottom:4px">Time taken</div>
+        <input class="input-field step-time" type="time" style="width:100px">
+      </div>
+    </div>
+    <div>
+      <div class="food-label" style="margin-bottom:4px">Relief after this treatment</div>
+      <select class="select-field step-relief">
+        <option value="">— select —</option>
+        <option>Full relief</option>
+        <option>Partial relief</option>
+        <option>No relief — needed next step</option>
+        <option>Too early to tell</option>
+      </select>
+    </div>`;
+  container.appendChild(div);
+}
+
+let activeEpisodeInterval=null;
+function startEpisode(){
+  const now=new Date();
+  const episode={
+    startTime:now.toISOString(),
+    startDisplay:now.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}),
+    steps:[]
+  };
+  localStorage.setItem('lucid-active-episode',JSON.stringify(episode));
+  showActiveEpisode();
+  const noBtn=document.getElementById('no-episode-btn');
+  if(noBtn) noBtn.style.display='none';
+  showToast('Episode started — '+episode.startDisplay);
+  switchTab('event',document.getElementById('nav-event'));
+  const ed=document.getElementById('event-date');
+  const ot=document.getElementById('onset-time');
+  if(ed) ed.value=now.toISOString().split('T')[0];
+  if(ot) ot.value=now.toTimeString().slice(0,5);
+  document.getElementById('evt-full').classList.add('selected');
+}
+
+function showActiveEpisode(){
+  const ep=JSON.parse(localStorage.getItem('lucid-active-episode')||'null');
+  const banner=document.getElementById('active-episode-banner');
+  const noBtn=document.getElementById('no-episode-btn');
+  if(!ep||!banner) return;
+  banner.style.display='block';
+  if(noBtn) noBtn.style.display='none';
+  const timeline=document.getElementById('episode-timeline');
+  if(timeline){
+    const start=new Date(ep.startTime);
+    let html=`<div style="font-size:12px;color:#712B13;margin-bottom:6px">Started ${ep.startDisplay}</div>`;
+    (ep.steps||[]).forEach(s=>{
+      html+=`<div style="font-size:12px;color:#993C1D;padding:3px 0;border-bottom:1px solid rgba(216,90,48,0.15)">${s.time} — ${s.medication} <span style="color:var(--coral);font-size:11px">${s.relief?'· '+s.relief:''}</span></div>`;
+    });
+    timeline.innerHTML=html;
+  }
+  if(activeEpisodeInterval) clearInterval(activeEpisodeInterval);
+  activeEpisodeInterval=setInterval(()=>{
+    const timer=document.getElementById('episode-timer');
+    if(!timer) return;
+    const diff=Math.floor((new Date()-new Date(ep.startTime))/60000);
+    const h=Math.floor(diff/60);
+    const m=diff%60;
+    timer.textContent=h>0?h+'h '+m+'m':m+'m';
+  },30000);
+  const timer=document.getElementById('episode-timer');
+  if(timer){
+    const diff=Math.floor((new Date()-new Date(ep.startTime))/60000);
+    const h=Math.floor(diff/60);const m=diff%60;
+    timer.textContent=h>0?h+'h '+m+'m':m+'m';
+  }
+}
+
+function addTreatmentStep(){
+  const ep=JSON.parse(localStorage.getItem('lucid-active-episode')||'null');
+  if(!ep) return;
+  switchTab('event',document.getElementById('nav-event'));
+  addTreatmentStepInline();
+  window.scrollTo(0,400);
+}
+
+function resolveEpisode(){
+  if(activeEpisodeInterval) clearInterval(activeEpisodeInterval);
+  clearActiveEpisode();
+  showToast('Episode resolved — fill in the details and save');
+  switchTab('event',document.getElementById('nav-event'));
+  const rt=document.getElementById('resolve-time');
+  if(rt) rt.value=new Date().toTimeString().slice(0,5);
+}
+
+function clearActiveEpisode(){
+  localStorage.removeItem('lucid-active-episode');
+  if(activeEpisodeInterval) clearInterval(activeEpisodeInterval);
+  const banner=document.getElementById('active-episode-banner');
+  const noBtn=document.getElementById('no-episode-btn');
+  if(banner) banner.style.display='none';
+  if(noBtn) noBtn.style.display='block';
+}
+
+function renderRecentEpisodes(){
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const container=document.querySelector('#main-dash .section-label:last-of-type');
+  const existingList=document.getElementById('episodes-list');
+  if(existingList) existingList.remove();
+  if(!episodes.length) return;
+  const list=document.createElement('div');
+  list.id='episodes-list';
+  list.style.marginBottom='1rem';
+  list.innerHTML=episodes.slice(0,5).map(ep=>{
+    const d=new Date(ep.date);
+    const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+    const typeLabel=ep.type==='migraine'?'Migraine':'Warning signs';
+    const badge=ep.type==='migraine'?'badge-migraine':'badge-pre';
+    const stepsText=ep.steps&&ep.steps.length?ep.steps.map(s=>s.medication).filter(Boolean).join(' → '):'No treatment logged';
+    const outcome=ep.outcome||'Outcome not logged';
+    return `<div class="card" style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}${ep.onsetTime?' · '+ep.onsetTime:''}</div>
+        <span class="badge ${badge}">${typeLabel}</span>
+      </div>
+      ${ep.severity?`<div style="font-size:12px;color:var(--text-light)">Severity ${ep.severity}/10</div>`:''}
+      <div style="font-size:12px;color:var(--text-light);margin-top:2px">${stepsText}</div>
+      <div style="font-size:12px;color:var(--teal);margin-top:2px">${outcome}</div>
+    </div>`;
+  }).join('');
+  const recentLabel=document.getElementById('recent-events-section');
+  if(recentLabel) recentLabel.after(list);
+}
 function updateProgress(count){
   const target=20;
   const unlocked=localStorage.getItem('lucid-unlocked')==='true';
