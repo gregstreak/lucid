@@ -368,7 +368,7 @@ body {
   <button class="nav-btn" id="nav-event" onclick="switchTab('event',this)">Event</button>
   <button class="nav-btn" id="nav-dash" onclick="switchTab('dash',this)">Dashboard</button>
   <button class="nav-btn" id="nav-report" onclick="switchTab('report',this)">Report</button>
-  <button class="nav-settings" onclick="showOb(1)" title="Settings">⚙</button>
+  <button class="nav-settings" onclick="openSettings()" title="Profile & settings">⚙</button>
 </nav>
 
 <!-- WELCOME 1 -->
@@ -520,23 +520,12 @@ body {
 
   <div class="section-label">Daily routine</div>
   <div class="card" id="protocol-card">
-    <div class="row"><div class="row-left"><div class="row-label">Magnesium glycinate <button class="info-btn" onclick="toggleInfo('i-mag')">i</button></div><div class="info-panel" id="i-mag">Migraineurs consistently show lower intracellular magnesium. Glycinate is well-absorbed. On swim days split the dose — some post-swim, rest at night.</div><div class="row-sub">300mg — night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Ginger <button class="info-btn" onclick="toggleInfo('i-gin')">i</button></div><div class="info-panel" id="i-gin">Inhibits prostaglandins involved in neurogenic inflammation. Useful preventively and acutely at first sign of onset.</div><div class="row-sub">540mg — night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Riboflavin B2 <button class="info-btn" onclick="toggleInfo('i-b2')">i</button></div><div class="info-panel" id="i-b2">Supports mitochondrial energy production in brain cells. 400mg is the therapeutic dose. Expect bright yellow urine — harmless, confirms absorption.</div><div class="row-sub">400mg — morning</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">CoQ10 ubiquinol <button class="info-btn" onclick="toggleInfo('i-coq')">i</button></div><div class="info-panel" id="i-coq">Electron carrier in the mitochondrial energy chain. Take with a meal containing fat. Ubiquinol is the active form — preferable over 40.</div><div class="row-sub">200mg — with main meal</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <!-- Rendered dynamically from profile by renderRoutine() -->
   </div>
 
   <div class="section-label">Exercise</div>
-  <div class="card">
-    <div class="row"><div class="row-left"><div class="row-label">Open water swim</div></div><button class="toggle" id="swim-tog" onclick="this.classList.toggle('on');toggleEl('swim-det',this)"></button></div>
-    <div id="swim-det" style="display:none;padding-top:8px">
-      <div class="counter-row"><div class="row-left"><div class="row-label">Distance (km)</div></div><input class="temp-input" id="swim-dist" type="number" placeholder="2.0" step="0.1" min="0"></div>
-      <div class="counter-row"><div class="row-left"><div class="row-label">Water temp (°C) <button class="info-btn" onclick="toggleInfo('i-temp')">i</button></div><div class="info-panel" id="i-temp">Below 15°C activates the trigeminal nerve more strongly and creates a larger stress hormone response. Track consistently — patterns often cluster around a specific threshold.</div></div><input class="temp-input" id="swim-temp" type="number" placeholder="18" min="0" max="35"></div>
-      <div class="row"><div class="row-left"><div class="row-label">Post-swim electrolytes <button class="info-btn" onclick="toggleInfo('i-elec')">i</button></div><div class="info-panel" id="i-elec">Plain water doesn't replace sodium, potassium, and magnesium lost through swimming. A drink with sodium and potassium chloride immediately post-swim restores balance before your body registers the deficit.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">300mg</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    </div>
-    <div class="row" style="margin-top:4px"><div class="row-left"><div class="row-label">Other exercise</div></div><button class="toggle" onclick="this.classList.toggle('on');toggleEl('other-det',this)"></button></div>
-    <div id="other-det" style="display:none;padding-top:8px"><input class="input-field" type="text" placeholder="e.g. golf, run — type and duration"></div>
+  <div class="card" id="exercise-card">
+    <!-- Rendered dynamically from profile by renderExercise() -->
   </div>
 
   <div class="section-label">Sleep</div>
@@ -602,7 +591,7 @@ body {
 
   <div class="section-label">Your personal triggers</div>
   <div class="section-note">From your profile — did any occur today?</div>
-  <div class="card"><div class="flag-grid"><button class="flag-btn" onclick="this.classList.toggle('selected')">Aged cheese</button></div></div>
+  <div class="card personal-triggers-card"><div style="font-size:13px;color:var(--text-light);font-style:italic">Loading your triggers…</div></div>
 
   <button class="btn-primary" id="save-log-btn" onclick="saveLog()">Save log</button>
 </div>
@@ -721,7 +710,7 @@ body {
     <div class="stat-card"><div class="stat-label">Avg severity</div><div class="stat-value">4.5</div><div class="stat-sub stat-up">↓ 2.7 vs last month</div></div>
   </div>
 
-  <div class="section-label">Barometric pressure — Knysna</div>
+  <div class="section-label" id="pressure-label">Barometric pressure</div>
   <div class="pressure-card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
@@ -883,7 +872,69 @@ body {
   <div class="report-note" style="padding:0 0 1rem">Generated by Lucid on <span id="report-date"></span>. Data reflects user-logged entries only. Patterns are correlational, not causal. Always consult a medical professional regarding diagnosis and treatment.</div>
 </div>
 
-<!-- UNLOCK MODAL -->
+<!-- SETTINGS SCREEN -->
+<div id="screen-settings" class="screen" style="padding:1.5rem 1.25rem 5rem">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem">
+    <button onclick="launchApp('log')" style="background:none;border:none;cursor:pointer;color:var(--teal);font-size:14px;font-family:var(--font-sans)">← Back</button>
+    <div style="font-family:var(--font-serif);font-size:20px;font-weight:300;letter-spacing:.1em;color:var(--teal-dark)">Settings</div>
+  </div>
+
+  <div class="section-label" style="margin-top:0">About you</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">First name</div></div><input class="input-field" id="s-name" type="text" placeholder="Your name" style="width:140px"></div>
+    <div class="row"><div class="row-left"><div class="row-label">Age range</div></div><select class="select-field" id="s-age" style="width:140px"><option>Under 25</option><option>25–34</option><option>35–44</option><option>45–54</option><option>55–64</option><option>65+</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Biological sex</div></div><select class="select-field" id="s-sex" style="width:140px"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Years suffering</div></div><select class="select-field" id="s-years" style="width:140px"><option>Under 1</option><option>1–3</option><option>3–5</option><option>5–10</option><option>10–20</option><option>20+ years</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Avg migraines / month</div></div><select class="select-field" id="s-freq" style="width:140px"><option>1–2</option><option>3–5</option><option>6–10</option><option>10+</option></select></div>
+  </div>
+
+  <div class="section-label">Your supplements</div>
+  <div class="section-note">These appear as your daily checklist</div>
+  <div class="card" id="settings-supp-list"></div>
+  <div class="card" style="margin-top:0">
+    <div style="margin-bottom:8px"><div class="food-label">Name</div><input class="input-field" id="s-supp-name" type="text" placeholder="e.g. Riboflavin B2"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <div style="flex:1"><div class="food-label">Dose</div><input class="input-field" id="s-supp-dose" type="text" placeholder="e.g. 400mg"></div>
+      <div style="flex:1"><div class="food-label">When</div><select class="select-field" id="s-supp-timing"><option>Morning</option><option>With meal</option><option>Afternoon</option><option selected>Night</option><option>Post-exercise</option></select></div>
+    </div>
+    <button class="btn-secondary" onclick="addSettingsSupp()" style="margin:0">+ Add supplement</button>
+  </div>
+
+  <div class="section-label">Exercise types</div>
+  <div class="card">
+    <div class="flag-grid" id="settings-exercise-grid">
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Open water swim</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Pool swim</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Running</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Cycling</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Golf</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Gym / weights</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Yoga / pilates</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Other</button>
+    </div>
+  </div>
+
+  <div class="section-label">Known personal triggers</div>
+  <div class="card">
+    <div class="flag-grid" id="settings-triggers-grid">
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Red wine</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Aged cheese</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Caffeine change</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Skipped meals</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Poor sleep</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Strong smells</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Bright light</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Stress</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Hormonal</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Weather change</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Alcohol</button>
+      <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">MSG / processed</button>
+    </div>
+    <div style="margin-top:10px"><div class="food-label" style="margin-bottom:4px">Add your own</div><input class="input-field" id="s-custom-trigger" type="text" placeholder="e.g. specific perfume, screen time…"></div>
+  </div>
+
+  <button class="btn-primary" onclick="saveSettings()">Save settings</button>
+</div>
 <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center">
   <div style="background:var(--warm-white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:1.75rem 1.5rem 2rem;width:100%;max-width:430px">
     <div style="width:36px;height:4px;background:var(--warm-white-2);border-radius:2px;margin:0 auto 1.5rem"></div>
@@ -1006,6 +1057,12 @@ function fetchPressure(){
           else if(df>3){if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}}
         }
       }).catch(()=>{});
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+      .then(r=>r.json()).then(data=>{
+        const town=data.address?.town||data.address?.city||data.address?.village||'';
+        const pl=document.getElementById('pressure-label');
+        if(pl&&town) pl.textContent='Barometric pressure — '+town;
+      }).catch(()=>{});
     },()=>{});
   }
 }
@@ -1042,6 +1099,9 @@ function launchApp(tab){
   }
   renderPastEntries();
   renderRecentEpisodes();
+  renderRoutine();
+  renderExercise();
+  renderPersonalTriggers();
   const ep=localStorage.getItem('lucid-active-episode');
   if(ep) showActiveEpisode();
   const rn=document.getElementById('report-name');
@@ -1117,7 +1177,131 @@ function saveSupps(){
   });
   localStorage.setItem('lucid-supps',JSON.stringify(supps));
 }
-function getLogDate(){
+function renderRoutine(){
+  const card=document.getElementById('protocol-card');
+  if(!card) return;
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  if(!supps.length){
+    card.innerHTML=`<div style="font-size:13px;color:var(--text-light);padding:4px 0">No supplements added yet. <button onclick="openSettings()" style="border:none;background:none;cursor:pointer;color:var(--teal);font-size:13px;font-family:var(--font-sans)">Add in Settings →</button></div>`;
+    return;
+  }
+  card.innerHTML=supps.map((s,i)=>`
+    <div class="row" style="${i===supps.length-1?'border-bottom:none;padding-bottom:0':''}">
+      <div class="row-left">
+        <div class="row-label">${s.name}</div>
+        <div class="row-sub">${s.dose||''}</div>
+      </div>
+      <button class="toggle" onclick="this.classList.toggle('on')"></button>
+    </div>`).join('');
+}
+
+function renderExercise(){
+  const card=document.getElementById('exercise-card');
+  if(!card) return;
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  const exercises=profile.exercises||[];
+  const isSwimmer=exercises.some(e=>e.toLowerCase().includes('swim'));
+  let html='';
+  if(isSwimmer){
+    html+=`<div class="row"><div class="row-left"><div class="row-label">Open water swim</div></div><button class="toggle" id="swim-tog" onclick="this.classList.toggle('on');toggleEl('swim-det',this)"></button></div>
+    <div id="swim-det" style="display:none;padding-top:8px">
+      <div class="counter-row"><div class="row-left"><div class="row-label">Distance (km)</div></div><input class="temp-input" id="swim-dist" type="number" placeholder="2.0" step="0.1" min="0"></div>
+      <div class="counter-row"><div class="row-left"><div class="row-label">Water temp (°C) <button class="info-btn" onclick="toggleInfo('i-temp')">i</button></div><div class="info-panel" id="i-temp">Below 15°C activates the trigeminal nerve more strongly and creates a larger stress hormone response. Track consistently — patterns often cluster around a specific threshold.</div></div><input class="temp-input" id="swim-temp" type="number" placeholder="18" min="0" max="35"></div>
+      <div class="row"><div class="row-left"><div class="row-label">Post-swim electrolytes <button class="info-btn" onclick="toggleInfo('i-elec')">i</button></div><div class="info-panel" id="i-elec">Plain water doesn't replace sodium, potassium, and magnesium lost through swimming. A drink with sodium and potassium chloride immediately post-swim restores balance before your body registers the deficit.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">${getMainMagDose()}</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    </div>`;
+  }
+  html+=`<div class="row" style="border-bottom:none;padding-bottom:0"><div class="row-left"><div class="row-label">Other exercise today</div></div><button class="toggle" id="other-tog" onclick="this.classList.toggle('on');toggleEl('other-det',this)"></button></div>
+  <div id="other-det" style="display:none;padding-top:8px"><input class="input-field" type="text" placeholder="e.g. golf, run — type and duration"></div>`;
+  card.innerHTML=html;
+}
+
+function getMainMagDose(){
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  const mag=supps.find(s=>s.name.toLowerCase().includes('magnesium'));
+  return mag?mag.dose:'extra dose';
+}
+
+function renderPersonalTriggers(){
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  const triggers=profile.triggers||[];
+  const card=document.querySelector('#main-log .personal-triggers-card');
+  if(!card) return;
+  if(!triggers.length){
+    card.innerHTML='<div style="font-size:13px;color:var(--text-light);font-style:italic">No personal triggers set. Add them in Settings.</div>';
+    return;
+  }
+  card.innerHTML='<div class="flag-grid">'+triggers.map(t=>`<button class="flag-btn" onclick="this.classList.toggle('selected')">${t}</button>`).join('')+'</div>';
+}
+
+function openSettings(){
+  document.querySelectorAll('.screen,.ob-screen,.main-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('app-nav').classList.remove('visible');
+  document.getElementById('screen-settings').classList.add('active');
+  populateSettings();
+}
+
+function populateSettings(){
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  if(profile.name){const n=document.getElementById('s-name');if(n)n.value=profile.name;}
+  if(profile.age){const a=document.getElementById('s-age');if(a)a.value=profile.age;}
+  if(profile.sex){const s=document.getElementById('s-sex');if(s)s.value=profile.sex;}
+  if(profile.years){const y=document.getElementById('s-years');if(y)y.value=profile.years;}
+  if(profile.freq){const f=document.getElementById('s-freq');if(f)f.value=profile.freq;}
+  const sl=document.getElementById('settings-supp-list');
+  if(sl){
+    if(!supps.length){sl.innerHTML='<div style="font-size:13px;color:var(--text-light)">No supplements added yet</div>';}
+    else{sl.innerHTML=supps.map((s,i)=>`<div class="supp-item" style="${i===supps.length-1?'border-bottom:none':''}"><div><div class="supp-name">${s.name}</div><div class="supp-dose">${s.dose||''}</div></div><button class="remove-btn" onclick="removeSettingsSupp(${i})">×</button></div>`).join('');}
+  }
+  const exercises=profile.exercises||[];
+  document.querySelectorAll('#settings-exercise-grid .flag-btn').forEach(btn=>{
+    btn.classList.toggle('selected-teal',exercises.includes(btn.textContent));
+  });
+  const triggers=profile.triggers||[];
+  document.querySelectorAll('#settings-triggers-grid .flag-btn').forEach(btn=>{
+    btn.classList.toggle('selected-teal',triggers.includes(btn.textContent));
+  });
+  if(profile.customTrigger){const ct=document.getElementById('s-custom-trigger');if(ct)ct.value=profile.customTrigger;}
+}
+
+function addSettingsSupp(){
+  const n=document.getElementById('s-supp-name').value.trim();
+  const d=document.getElementById('s-supp-dose').value.trim();
+  const t=document.getElementById('s-supp-timing').value;
+  if(!n) return;
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  supps.push({name:n,dose:d+(d?' — ':'')+t});
+  localStorage.setItem('lucid-supps',JSON.stringify(supps));
+  document.getElementById('s-supp-name').value='';
+  document.getElementById('s-supp-dose').value='';
+  populateSettings();
+}
+
+function removeSettingsSupp(idx){
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+  supps.splice(idx,1);
+  localStorage.setItem('lucid-supps',JSON.stringify(supps));
+  populateSettings();
+}
+
+function saveSettings(){
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  profile.name=document.getElementById('s-name')?.value||profile.name;
+  profile.age=document.getElementById('s-age')?.value||profile.age;
+  profile.sex=document.getElementById('s-sex')?.value||profile.sex;
+  profile.years=document.getElementById('s-years')?.value||profile.years;
+  profile.freq=document.getElementById('s-freq')?.value||profile.freq;
+  profile.exercises=Array.from(document.querySelectorAll('#settings-exercise-grid .flag-btn.selected-teal')).map(b=>b.textContent);
+  profile.triggers=Array.from(document.querySelectorAll('#settings-triggers-grid .flag-btn.selected-teal')).map(b=>b.textContent);
+  profile.customTrigger=document.getElementById('s-custom-trigger')?.value||'';
+  localStorage.setItem('lucid-profile',JSON.stringify(profile));
+  showToast('Settings saved ✓');
+  launchApp('log');
+  renderRoutine();
+  renderExercise();
+  renderPersonalTriggers();
+}
   const dp=document.getElementById('log-date');
   if(dp&&dp.value){
     const d=new Date(dp.value+'T12:00:00');
@@ -1151,7 +1335,8 @@ function saveLog(){
     swimDist:document.getElementById('swim-dist').value,
     swimTemp:document.getElementById('swim-temp').value,
     sleep:C.sleep,water:C.water,coffee:C.coffee,
-    protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length
+    protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
+    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length
   };
   localStorage.setItem('lucid-log-'+dateStr,JSON.stringify(logData));
   if(isNew){
