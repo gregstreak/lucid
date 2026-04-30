@@ -1005,14 +1005,13 @@ function renderRecentEvents(){
     const sev=ep.severity?'severity '+ep.severity:'';
     const meds=(ep.steps||[]).filter(s=>s.medication).map(s=>s.medication).join(' → ');
     const outcome=ep.outcome||'';
-    return `<div class="event-item" style="position:relative">
+    return `<div class="event-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div class="event-time">${label}${time}</div>
           <div class="event-title">${sev?sev+' · ':''}${meds||'No treatment logged'}</div>
           <span class="badge ${badgeClass}">${typeLabel}</span>${outcome?` <span class="badge badge-resolved">${outcome}</span>`:''}
         </div>
-        <button onclick="deleteEpisode('${ep.id}')" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:18px;padding:0 0 0 8px;line-height:1" title="Delete">×</button>
       </div>
     </div>`;
   }).join('');
