@@ -1626,7 +1626,10 @@ function renderPastEntries(){
         try{const entry=JSON.parse(localStorage.getItem(key));if(entry&&entry.date)entries.push(entry);}catch(e){}
       }
     }
-    entries.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    entries.sort((a,b)=>{
+      const da=new Date(a.date); const db=new Date(b.date);
+      return (isNaN(db)?0:db)-(isNaN(da)?0:da);
+    });
     if(entries.length===0){
       list.innerHTML='<div style="font-size:13px;color:var(--text-light);padding:.5rem 0">No entries yet — start logging to see your history here.</div>';
       return;
@@ -1994,7 +1997,7 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),2400);
 }
 
-const savedCount=parseInt(localStorage.getItem('lucid-entry-count')||'14');
+const savedCount=parseInt(localStorage.getItem('lucid-entry-count')||'0');
 updateProgress(savedCount);
 
 if('serviceWorker' in navigator){
@@ -2002,6 +2005,26 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+// Initialize app on page load
+window.addEventListener('DOMContentLoaded', ()=>{
+  const hasProfile=localStorage.getItem('lucid-profile');
+  const hasSupps=localStorage.getItem('lucid-supps');
+  if(hasProfile||hasSupps){
+    // Returning user — go straight to app
+    launchApp('log');
+  }
+  // Also always run renders in case launchApp already fired
+  setTimeout(()=>{
+    renderRoutine();
+    renderExercise();
+    renderPersonalTriggers();
+    renderPastEntries();
+    renderRecentEvents();
+    renderStreakAndCalendar();
+    renderDashStats();
+  }, 100);
+});
 </script>
 </body>
 </html>
