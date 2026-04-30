@@ -2006,16 +2006,29 @@ if('serviceWorker' in navigator){
   });
 }
 
-// Initialize app on page load
-window.addEventListener('DOMContentLoaded', ()=>{
-  const hasProfile=localStorage.getItem('lucid-profile');
-  const hasSupps=localStorage.getItem('lucid-supps');
-  if(hasProfile||hasSupps){
-    // Returning user — go straight to app
-    launchApp('log');
-  }
-  // Also always run renders in case launchApp already fired
-  setTimeout(()=>{
+// Auto-launch for returning users
+(function init(){
+  const hasData=localStorage.getItem('lucid-profile')||localStorage.getItem('lucid-supps')||localStorage.getItem('lucid-entry-count');
+  if(hasData){
+    // Hide welcome, show app immediately
+    document.querySelectorAll('.screen,.ob-screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('app-nav').classList.add('visible');
+    document.querySelectorAll('.main-screen').forEach(s=>s.classList.remove('active'));
+    const mainLog=document.getElementById('main-log');
+    if(mainLog) mainLog.classList.add('active');
+    const navLog=document.getElementById('nav-log');
+    if(navLog){
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+      navLog.classList.add('active');
+    }
+    // Set dates
+    const now=new Date();
+    const dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    const dp=document.getElementById('log-date');
+    if(dp&&!dp.value) dp.value=dateStr;
+    const ed=document.getElementById('event-date');
+    if(ed&&!ed.value) ed.value=dateStr;
+    // Run all renders
     renderRoutine();
     renderExercise();
     renderPersonalTriggers();
@@ -2023,8 +2036,11 @@ window.addEventListener('DOMContentLoaded', ()=>{
     renderRecentEvents();
     renderStreakAndCalendar();
     renderDashStats();
-  }, 100);
-});
+    renderReport();
+    fetchPressure();
+    checkExistingLog();
+  }
+})();
 </script>
 </body>
 </html>
