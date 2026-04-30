@@ -1024,7 +1024,7 @@ function deleteEpisode(id){
   const filtered=episodes.filter(ep=>ep.id!==id);
   localStorage.setItem('lucid-episodes',JSON.stringify(filtered));
   renderRecentEvents();
-  renderRecentEpisodes();
+
   renderDashStats();
   renderStreakAndCalendar();
   showToast('Episode deleted');
@@ -1130,7 +1130,7 @@ function launchApp(tab){
     ed.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   }
   renderPastEntries();
-  renderRecentEpisodes();
+
   renderRoutine();
   renderExercise();
   renderPersonalTriggers();
@@ -1452,8 +1452,8 @@ function renderExercise(){
     <div id="swim-det" style="display:none;padding-top:8px">
       <div class="counter-row"><div class="row-left"><div class="row-label">Distance (km)</div></div><input class="temp-input" id="swim-dist" type="number" placeholder="2.0" step="0.1" min="0"></div>
       <div class="counter-row"><div class="row-left"><div class="row-label">Water temp (°C) <button class="info-btn" onclick="toggleInfo('i-temp')">i</button></div><div class="info-panel" id="i-temp">Below 15°C activates the trigeminal nerve more strongly and creates a larger stress hormone response. Track consistently — patterns often cluster around a specific threshold.</div></div><input class="temp-input" id="swim-temp" type="number" placeholder="18" min="0" max="35"></div>
-      <div class="row"><div class="row-left"><div class="row-label">Post-swim electrolytes <button class="info-btn" onclick="toggleInfo('i-elec')">i</button></div><div class="info-panel" id="i-elec">Plain water doesn't replace sodium, potassium, and magnesium lost through swimming. A drink with sodium and potassium chloride immediately post-swim restores balance before your body registers the deficit.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">${magDose}</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+      <div class="row"><div class="row-left"><div class="row-label">Post-swim electrolytes <button class="info-btn" onclick="toggleInfo('i-elec')">i</button></div><div class="info-panel" id="i-elec">Plain water doesn't replace sodium, potassium, and magnesium lost through swimming. A drink with sodium and potassium chloride immediately post-swim restores balance before your body registers the deficit.</div></div><button class="toggle" id="swim-elec-tog" onclick="this.classList.toggle('on')"></button></div>
+      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">${magDose}</div></div><button class="toggle" id="swim-mag-tog" onclick="this.classList.toggle('on')"></button></div>
     </div>`;
   }
   html+=`<div class="row" style="border-bottom:none;padding-bottom:0"><div class="row-left"><div class="row-label">Other exercise today</div></div><button class="toggle" id="other-tog" onclick="this.classList.toggle('on');toggleEl('other-det',this)"></button></div>
@@ -1584,10 +1584,6 @@ function saveLog(){
   const swimDist=document.getElementById('swim-dist');
   const swimTemp=document.getElementById('swim-temp');
 
-  // Capture swim detail toggles by label
-  const swimElec=document.querySelector('#swim-det .toggle:nth-of-type(1)');
-  const swimMag=document.querySelector('#swim-det .toggle:nth-of-type(2)');
-
   // Capture supplement toggle states
   const suppStates={};
   document.querySelectorAll('#protocol-card .toggle').forEach((t,i)=>{suppStates[i]=t.classList.contains('on');});
@@ -1622,8 +1618,8 @@ function saveLog(){
     swam:swimTog?swimTog.classList.contains('on'):false,
     swimDist:swimDist?swimDist.value:'',
     swimTemp:swimTemp?swimTemp.value:'',
-    swimElec:swimElec?swimElec.classList.contains('on'):false,
-    swimMag:swimMag?swimMag.classList.contains('on'):false,
+    swimElec:document.getElementById('swim-elec-tog')?document.getElementById('swim-elec-tog').classList.contains('on'):false,
+    swimMag:document.getElementById('swim-mag-tog')?document.getElementById('swim-mag-tog').classList.contains('on'):false,
     sleep:C.sleep,
     wokeDuring:wokeDuring?wokeDuring.classList.contains('on'):false,
     wokeBefore:wokeBefore?wokeBefore.classList.contains('on'):false,
@@ -1681,7 +1677,7 @@ function renderPastEntries(showAll=false){
     list.innerHTML=visible.map(e=>{
       const d=new Date(e.date);
       const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
-      const swim=e.swam?'Swim'+(e.swimDist?' '+e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
+      const swim=e.swam?'Swim'+(e.swimDist?' '+e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'';
       const otherEx=e.otherExercise&&e.otherExerciseText?e.otherExerciseText:(e.otherExercise?'Other exercise':'');
       const sleep=e.sleep?e.sleep+'h sleep':'';
       const suppTotal=e.suppTotal||e.protocolCount||0;
@@ -1820,12 +1816,11 @@ function loadEntryForEdit(dateStr){
       }
       if(sdDelayed&&existing.swimDist) sdDelayed.value=existing.swimDist;
       if(stempDelayed&&existing.swimTemp) stempDelayed.value=existing.swimTemp;
-      // Restore swim detail toggles (electrolytes, extra magnesium)
-      if(swimDetDelayed){
-        const swimDetailToggles=swimDetDelayed.querySelectorAll('.toggle');
-        if(existing.swimElec&&swimDetailToggles[0]) swimDetailToggles[0].classList.add('on');
-        if(existing.swimMag&&swimDetailToggles[1]) swimDetailToggles[1].classList.add('on');
-      }
+      // Restore swim detail toggles by ID
+      const swimElecTog=document.getElementById('swim-elec-tog');
+      const swimMagTog=document.getElementById('swim-mag-tog');
+      if(existing.swimElec&&swimElecTog) swimElecTog.classList.add('on');
+      if(existing.swimMag&&swimMagTog) swimMagTog.classList.add('on');
     }
     // Restore other exercise
     if(existing&&existing.otherExercise){
@@ -1894,7 +1889,7 @@ function saveEvent(){
   episodes.unshift(episode);
   localStorage.setItem('lucid-episodes',JSON.stringify(episodes));
   clearActiveEpisode();
-  renderRecentEpisodes();
+
   renderRecentEvents();
   renderDashStats();
   renderStreakAndCalendar();
@@ -2018,35 +2013,6 @@ function clearActiveEpisode(){
   if(noBtn) noBtn.style.display='block';
 }
 
-function renderRecentEpisodes(){
-  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
-  const container=document.querySelector('#main-dash .section-label:last-of-type');
-  const existingList=document.getElementById('episodes-list');
-  if(existingList) existingList.remove();
-  if(!episodes.length) return;
-  const list=document.createElement('div');
-  list.id='episodes-list';
-  list.style.marginBottom='1rem';
-  list.innerHTML=episodes.slice(0,5).map(ep=>{
-    const d=new Date(ep.date);
-    const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
-    const typeLabel=ep.type==='migraine'?'Migraine':ep.type==='near-miss'?'Near miss':'Warning signs';
-    const badge=ep.type==='migraine'?'badge-migraine':'badge-pre';
-    const stepsText=ep.steps&&ep.steps.length?ep.steps.map(s=>s.medication).filter(Boolean).join(' → '):'No treatment logged';
-    const outcome=ep.outcome||'Outcome not logged';
-    return `<div class="card" style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}${ep.onsetTime?' · '+ep.onsetTime:''}</div>
-        <span class="badge ${badge}">${typeLabel}</span>
-      </div>
-      ${ep.severity?`<div style="font-size:12px;color:var(--text-light)">Severity ${ep.severity}/10</div>`:''}
-      <div style="font-size:12px;color:var(--text-light);margin-top:2px">${stepsText}</div>
-      <div style="font-size:12px;color:var(--teal);margin-top:2px">${outcome}</div>
-    </div>`;
-  }).join('');
-  const recentLabel=document.getElementById('recent-events-section');
-  if(recentLabel) recentLabel.after(list);
-}
 function updateProgress(count){
   const target=20;
   const unlocked=localStorage.getItem('lucid-unlocked')==='true';
