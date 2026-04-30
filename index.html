@@ -308,10 +308,6 @@ body {
 .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--teal-dark); color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; opacity: 0; pointer-events: none; z-index: 200; transition: all .3s; white-space: nowrap; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-/* SKIP BAR */
-.skip-bar { display: flex; gap: 5px; flex-wrap: wrap; padding: 8px 1.25rem; background: var(--teal-light); border-bottom: 1px solid var(--teal-mid); }
-.skip-btn { font-size: 10px; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--teal-mid); background: white; cursor: pointer; color: var(--teal-deeper); font-family: var(--font-sans); }
-
 /* DATE LABEL */
 .today-date { font-size: 12px; color: var(--text-light); margin-bottom: 1.25rem; }
 
@@ -341,18 +337,6 @@ body {
 </style>
 </head>
 <body>
-
-<!-- SKIP BAR (dev only) -->
-<div class="skip-bar" id="skip-bar">
-  <span style="font-size:10px;color:var(--teal-deeper);align-self:center;font-weight:500">v6 |</span>
-  <button class="skip-btn" onclick="showScreen('welcome1')">Welcome</button>
-  <button class="skip-btn" onclick="showScreen('welcome2')">Expectations</button>
-  <button class="skip-btn" onclick="showOb(1)">Onboarding</button>
-  <button class="skip-btn" onclick="launchApp('log')">Daily log</button>
-  <button class="skip-btn" onclick="launchApp('event')">Log event</button>
-  <button class="skip-btn" onclick="launchApp('dash')">Dashboard</button>
-  <button class="skip-btn" onclick="launchApp('report')">Report</button>
-</div>
 
 <!-- NAV -->
 <nav class="app-nav" id="app-nav">
@@ -504,7 +488,7 @@ body {
     <div class="row" style="padding-top:8px"><div class="row-left"><div class="row-label">Typical weekly sessions</div></div><select class="select-field" style="width:120px"><option>1–2</option><option selected>3–4</option><option>5–6</option><option>Daily</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Typical session time</div></div><select class="select-field" style="width:120px"><option selected>Early morning</option><option>Morning</option><option>Midday</option><option>Afternoon</option><option>Evening</option></select></div>
   </div>
-  <button class="btn-primary" onclick="launchApp('log')">Start logging</button>
+  <button class="btn-primary" onclick="launchApp('log');setTimeout(()=>showToast('Welcome to Lucid — tap ⚙ anytime to update your profile'),800)">Start logging</button>
 </div>
 
 <!-- DAILY LOG -->
@@ -786,10 +770,6 @@ body {
 
   <div class="section-label">Past entries</div>
   <div id="past-entries-list"></div>
-  <div class="card" style="margin-bottom:.75rem">
-    <button onclick="debugStorage()" style="width:100%;padding:8px;border:none;background:var(--teal-light);border-radius:var(--radius-sm);font-size:12px;color:var(--teal-deeper);cursor:pointer;font-family:var(--font-sans)">Debug — check local storage</button>
-    <div id="debug-output" style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.6;display:none;word-break:break-all"></div>
-  </div>
 
   <div class="section-label">Emerging pattern</div>
   <div class="analysis-card" id="analysis-card">
@@ -1662,25 +1642,6 @@ function saveLog(){
   renderPastEntries();
   const today=new Date().toDateString();
   showToast(dateStr===today?'Today logged ✓':'Past entry saved ✓');
-}
-
-function debugStorage(){
-  const out=document.getElementById('debug-output');
-  if(!out) return;
-  out.style.display='block';
-  const keys=[];
-  for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
-  const logKeys=keys.filter(k=>k.startsWith('lucid-log-'));
-  const supps=localStorage.getItem('lucid-supps');
-  const profile=localStorage.getItem('lucid-profile');
-  const count=localStorage.getItem('lucid-entry-count');
-  out.innerHTML=`
-    <strong>Entry count:</strong> ${count||'not set'}<br>
-    <strong>Log keys found:</strong> ${logKeys.length} (${logKeys.slice(0,3).join(', ')}${logKeys.length>3?'...':''})<br>
-    <strong>Supplements saved:</strong> ${supps?JSON.parse(supps).length+' items':'none'}<br>
-    <strong>Profile saved:</strong> ${profile?'yes — '+JSON.parse(profile).name:'no'}<br>
-    <strong>All lucid keys:</strong> ${keys.filter(k=>k.startsWith('lucid')).join(', ')||'none'}
-  `;
 }
 
 function renderPastEntries(){
