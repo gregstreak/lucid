@@ -1,4 +1,4 @@
-const CACHE = 'lucid-v5';
+const CACHE = 'lucid-v6';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {

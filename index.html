@@ -1019,12 +1019,29 @@ function renderRecentEvents(){
     const sev=ep.severity?'severity '+ep.severity:'';
     const meds=(ep.steps||[]).filter(s=>s.medication).map(s=>s.medication).join(' → ');
     const outcome=ep.outcome||'';
-    return `<div class="event-item">
-      <div class="event-time">${label}${time}</div>
-      <div class="event-title">${sev?sev+' · ':''}${meds||'No treatment logged'}</div>
-      <span class="badge ${badgeClass}">${typeLabel}</span>${outcome?` <span class="badge badge-resolved">${outcome}</span>`:''}
+    return `<div class="event-item" style="position:relative">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="event-time">${label}${time}</div>
+          <div class="event-title">${sev?sev+' · ':''}${meds||'No treatment logged'}</div>
+          <span class="badge ${badgeClass}">${typeLabel}</span>${outcome?` <span class="badge badge-resolved">${outcome}</span>`:''}
+        </div>
+        <button onclick="deleteEpisode('${ep.id}')" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:18px;padding:0 0 0 8px;line-height:1" title="Delete">×</button>
+      </div>
     </div>`;
   }).join('');
+}
+
+function deleteEpisode(id){
+  if(!confirm('Delete this episode?')) return;
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const filtered=episodes.filter(ep=>ep.id!==id);
+  localStorage.setItem('lucid-episodes',JSON.stringify(filtered));
+  renderRecentEvents();
+  renderRecentEpisodes();
+  renderDashStats();
+  renderStreakAndCalendar();
+  showToast('Episode deleted');
 }
 
 
@@ -1468,7 +1485,10 @@ function renderPersonalTriggers(){
     card.innerHTML='<div style="font-size:13px;color:var(--text-light);font-style:italic">No personal triggers set. Add them in Settings.</div>';
     return;
   }
-  card.innerHTML='<div class="flag-grid">'+triggers.map(t=>`<button class="flag-btn" onclick="this.classList.toggle('selected')">${t}</button>`).join('')+'</div>';
+  // Never pre-select — user taps to indicate if they occurred today
+  card.innerHTML='<div class="flag-grid">'+triggers.map(t=>
+    `<button class="flag-btn" onclick="this.classList.toggle('selected')">${t}</button>`
+  ).join('')+'</div>';
 }
 
 function openSettings(){
@@ -1569,19 +1589,66 @@ function checkExistingLog(){
 function saveLog(){
   const dateStr=getLogDate();
   const isNew=!localStorage.getItem('lucid-log-'+dateStr);
+  const swimTog=document.getElementById('swim-tog');
   const swimDist=document.getElementById('swim-dist');
   const swimTemp=document.getElementById('swim-temp');
-  const swimTog=document.getElementById('swim-tog');
+
+  // Capture swim detail toggles by label
+  const swimElec=document.querySelector('#swim-det .toggle:nth-of-type(1)');
+  const swimMag=document.querySelector('#swim-det .toggle:nth-of-type(2)');
+
+  // Capture supplement toggle states
+  const suppStates={};
+  document.querySelectorAll('#protocol-card .toggle').forEach((t,i)=>{suppStates[i]=t.classList.contains('on');});
+
+  // Capture food diary
+  const foodFields=document.querySelectorAll('#food-detail .textarea-field');
+  const snackTime=document.querySelector('#food-detail input[type="time"]');
+  const foods={
+    breakfast:foodFields[0]?foodFields[0].value:'',
+    lunch:foodFields[1]?foodFields[1].value:'',
+    dinner:foodFields[2]?foodFields[2].value:'',
+    snacks:foodFields[3]?foodFields[3].value:'',
+    snackTime:snackTime?snackTime.value:''
+  };
+
+  // Capture nutrition toggles by querying the nutrition card directly
+  const ateWoke=document.querySelector('#main-log .card:nth-of-type(4) .toggle:nth-of-type(1)');
+  const protein=document.querySelector('#main-log .card:nth-of-type(4) .toggle:nth-of-type(2)');
+  const bedtimeSnack=document.querySelector('#main-log .card:nth-of-type(4) .toggle:nth-of-type(3)');
+  const mealGap=document.querySelector('#main-log .gap-btn.selected')?.textContent||'';
+
+  // Capture triggers
+  const triggersLogged=Array.from(document.querySelectorAll('#main-log .flag-btn.selected')).map(b=>b.textContent);
+
+  // Capture woke toggles
+  const wokeDuring=document.querySelector('#main-log #sleep-val')?.closest('.card')?.querySelectorAll('.toggle')[0];
+  const wokeBefore=document.querySelector('#main-log #sleep-val')?.closest('.card')?.querySelectorAll('.toggle')[1];
+  const sugaryDrinks=document.querySelector('#main-log #alcohol-val')?.closest('.card')?.querySelectorAll('.toggle:last-of-type')[0];
+
   const logData={
     date:dateStr,
     swam:swimTog?swimTog.classList.contains('on'):false,
     swimDist:swimDist?swimDist.value:'',
     swimTemp:swimTemp?swimTemp.value:'',
-    sleep:C.sleep,water:C.water,coffee:C.coffee,
+    swimElec:swimElec?swimElec.classList.contains('on'):false,
+    swimMag:swimMag?swimMag.classList.contains('on'):false,
+    sleep:C.sleep,
+    wokeDuring:wokeDuring?wokeDuring.classList.contains('on'):false,
+    wokeBefore:wokeBefore?wokeBefore.classList.contains('on'):false,
+    water:C.water,coffee:C.coffee,tcaf:C.tcaf,therb:C.therb,alcohol:C.alcohol,
+    sugaryDrinks:sugaryDrinks?sugaryDrinks.classList.contains('on'):false,
+    ateWoke:ateWoke?ateWoke.classList.contains('on'):false,
+    mealGap:mealGap,
+    protein:protein?protein.classList.contains('on'):false,
+    bedtimeSnack:bedtimeSnack?bedtimeSnack.classList.contains('on'):false,
+    activity:document.querySelector('#main-log .flag-btn.selected-teal')?.textContent||'',
+    activityNote:document.getElementById('activity-note')?.value||'',
+    foods:foods,
+    triggers:triggersLogged,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
-    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length,
-    activity:document.querySelector('.flag-grid .flag-btn.selected-teal')?.textContent||'',
-    activityNote:document.getElementById('activity-note')?.value||''
+    suppStates:suppStates,
+    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length
   };
   localStorage.setItem('lucid-log-'+dateStr,JSON.stringify(logData));
   if(isNew){
@@ -1704,7 +1771,51 @@ function loadEntryForEdit(dateStr){
     if(existing.tcaf!=null){C.tcaf=existing.tcaf;const tv=document.getElementById('tcaf-val');if(tv)tv.textContent=existing.tcaf;}
     if(existing.therb!=null){C.therb=existing.therb;const tv2=document.getElementById('therb-val');if(tv2)tv2.textContent=existing.therb;}
     if(existing.alcohol!=null){C.alcohol=existing.alcohol;const av=document.getElementById('alcohol-val');if(av)av.textContent=existing.alcohol;}
-    if(existing.activity&&an) an.value=existing.activity;
+    if(existing.activity){
+      document.querySelectorAll('#main-log .flag-grid .flag-btn').forEach(b=>{
+        if(b.textContent===existing.activity) b.classList.add('selected-teal');
+      });
+    }
+    if(an&&existing.activityNote) an.value=existing.activityNote;
+    // Restore food diary
+    if(existing.foods&&Object.values(existing.foods).some(v=>v)){
+      const fd=document.getElementById('food-detail');
+      const fb=document.getElementById('food-expand-btn');
+      if(fd) fd.classList.add('open');
+      if(fb) fb.textContent='− Hide food log';
+      const foodFields=document.querySelectorAll('#food-detail .textarea-field');
+      if(existing.foods.breakfast&&foodFields[0]) foodFields[0].value=existing.foods.breakfast;
+      if(existing.foods.lunch&&foodFields[1]) foodFields[1].value=existing.foods.lunch;
+      if(existing.foods.dinner&&foodFields[2]) foodFields[2].value=existing.foods.dinner;
+      if(existing.foods.snacks&&foodFields[3]) foodFields[3].value=existing.foods.snacks;
+      const snackTimeEl=document.querySelector('#food-detail input[type="time"]');
+      if(snackTimeEl&&existing.foods.snackTime) snackTimeEl.value=existing.foods.snackTime;
+    }
+    // Restore triggers
+    if(existing.triggers&&existing.triggers.length){
+      document.querySelectorAll('#main-log .flag-btn').forEach(b=>{
+        if(existing.triggers.includes(b.textContent)) b.classList.add('selected');
+      });
+    }
+    // Restore meal gap
+    if(existing.mealGap){
+      document.querySelectorAll('#main-log .gap-btn').forEach(b=>{
+        if(b.textContent===existing.mealGap) b.classList.add('selected');
+      });
+    }
+    // Restore woke toggles
+    const sleepToggles=document.querySelector('#sleep-val')?.closest('.card')?.querySelectorAll('.toggle');
+    if(sleepToggles){
+      if(existing.wokeDuring&&sleepToggles[0]) sleepToggles[0].classList.add('on');
+      if(existing.wokeBefore&&sleepToggles[1]) sleepToggles[1].classList.add('on');
+    }
+    // Restore nutrition toggles
+    const nutToggles=document.querySelector('#activity-note')?.closest('.card')?.previousElementSibling?.querySelectorAll('.toggle');
+    if(nutToggles){
+      if(existing.ateWoke&&nutToggles[0]) nutToggles[0].classList.add('on');
+      if(existing.protein&&nutToggles[1]) nutToggles[1].classList.add('on');
+      if(existing.bedtimeSnack&&nutToggles[2]) nutToggles[2].classList.add('on');
+    }
   }
 
   switchTab('log',document.getElementById('nav-log'));
@@ -1722,6 +1833,19 @@ function loadEntryForEdit(dateStr){
       }
       if(sdDelayed&&existing.swimDist) sdDelayed.value=existing.swimDist;
       if(stempDelayed&&existing.swimTemp) stempDelayed.value=existing.swimTemp;
+      // Restore swim detail toggles (electrolytes, extra magnesium)
+      if(swimDetDelayed){
+        const swimDetailToggles=swimDetDelayed.querySelectorAll('.toggle');
+        if(existing.swimElec&&swimDetailToggles[0]) swimDetailToggles[0].classList.add('on');
+        if(existing.swimMag&&swimDetailToggles[1]) swimDetailToggles[1].classList.add('on');
+      }
+    }
+    // Restore supplement toggle states
+    if(existing&&existing.suppStates){
+      document.querySelectorAll('#protocol-card .toggle').forEach((t,i)=>{
+        if(existing.suppStates[i]) t.classList.add('on');
+        else t.classList.remove('on');
+      });
     }
     checkExistingLog();
   }, 50);
@@ -1729,6 +1853,8 @@ function loadEntryForEdit(dateStr){
   showToast('Entry loaded — edit and save to update');
 }
 function saveEvent(){
+  const saveBtn=document.querySelector('#main-event .btn-primary');
+  if(saveBtn) saveBtn.disabled=true;
   const steps=[];
   document.querySelectorAll('.treatment-step-card').forEach((card,i)=>{
     steps.push({
@@ -1738,11 +1864,25 @@ function saveEvent(){
     });
   });
   const eventDate=document.getElementById('event-date')?.value||new Date().toISOString().split('T')[0];
+  const onsetTime=document.getElementById('onset-time')?.value||'';
+  // Prevent duplicates — check if identical episode exists within last 5 minutes
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const isDuplicate=episodes.some(ep=>
+    ep.date===eventDate&&
+    ep.onsetTime===onsetTime&&
+    ep.type===(document.getElementById('evt-full')?.classList.contains('selected')?'migraine':'warning')&&
+    (Date.now()-parseInt(ep.id.replace('ep-',''))<300000)
+  );
+  if(isDuplicate){
+    showToast('Already saved — no duplicate created');
+    if(saveBtn) saveBtn.disabled=false;
+    return;
+  }
   const episode={
     id:'ep-'+Date.now(),
     date:eventDate,
     type:document.getElementById('evt-full')?.classList.contains('selected')?'migraine':'warning',
-    onsetTime:document.getElementById('onset-time')?.value||'',
+    onsetTime:onsetTime,
     severity:document.querySelector('.sev-btn.sel')?.textContent||'',
     warnings:Array.from(document.querySelectorAll('#main-event .flag-btn.selected')).map(b=>b.textContent),
     steps:steps,
@@ -1750,7 +1890,6 @@ function saveEvent(){
     resolveTime:document.getElementById('resolve-time')?.value||'',
     notes:document.getElementById('episode-notes')?.value||''
   };
-  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
   episodes.unshift(episode);
   localStorage.setItem('lucid-episodes',JSON.stringify(episodes));
   clearActiveEpisode();
@@ -1758,6 +1897,7 @@ function saveEvent(){
   renderRecentEvents();
   renderDashStats();
   renderStreakAndCalendar();
+  if(saveBtn) setTimeout(()=>saveBtn.disabled=false, 2000);
   showToast('Episode saved ✓');
 }
 
