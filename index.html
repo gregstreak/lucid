@@ -1657,6 +1657,35 @@ function renderPastEntries(){
 }
 
 function loadEntryForEdit(dateStr){
+  // Reset all toggles first
+  document.querySelectorAll('#main-log .toggle.on').forEach(t=>t.classList.remove('on'));
+  // Reset counters
+  C.sleep=7; C.water=0; C.coffee=0; C.tcaf=0; C.therb=0; C.alcohol=0;
+  ['sleep','water','coffee','tcaf','therb','alcohol'].forEach(k=>{
+    const el=document.getElementById(k+'-val');
+    if(el) el.textContent=C[k];
+  });
+  // Hide swim detail
+  const swimTog=document.getElementById('swim-tog');
+  const swimDet=document.getElementById('swim-det');
+  if(swimTog) swimTog.classList.remove('on');
+  if(swimDet) swimDet.style.display='none';
+  // Clear swim fields
+  const sd=document.getElementById('swim-dist');
+  const stemp=document.getElementById('swim-temp');
+  if(sd) sd.value='';
+  if(stemp) stemp.value='';
+  // Clear text fields
+  const an=document.getElementById('activity-note');
+  if(an) an.value='';
+  // Clear activity flags
+  document.querySelectorAll('#main-log .flag-btn.selected-teal').forEach(b=>b.classList.remove('selected-teal'));
+  // Clear gap buttons
+  document.querySelectorAll('#main-log .gap-btn.selected').forEach(b=>b.classList.remove('selected'));
+  // Clear flag buttons
+  document.querySelectorAll('#main-log .flag-btn.selected').forEach(b=>b.classList.remove('selected'));
+
+  // Set date
   const dp=document.getElementById('log-date');
   if(dp){
     const d=new Date(dateStr);
@@ -1665,23 +1694,37 @@ function loadEntryForEdit(dateStr){
     const day=String(d.getDate()).padStart(2,'0');
     dp.value=y+'-'+m+'-'+day;
   }
+
+  // Load saved data
   const existing=JSON.parse(localStorage.getItem('lucid-log-'+dateStr)||'null');
   if(existing){
-    const swimTog=document.getElementById('swim-tog');
-    if(existing.swam&&swimTog&&!swimTog.classList.contains('on')){
-      swimTog.classList.add('on');
-      const swimDet=document.getElementById('swim-det');
-      if(swimDet) swimDet.style.display='block';
-    }
-    const sd=document.getElementById('swim-dist');
-    const stemp=document.getElementById('swim-temp');
-    if(sd&&existing.swimDist) sd.value=existing.swimDist;
-    if(stemp&&existing.swimTemp) stemp.value=existing.swimTemp;
-    if(existing.sleep){C.sleep=existing.sleep;const sv=document.getElementById('sleep-val');if(sv)sv.textContent=existing.sleep;}
+    if(existing.sleep!=null){C.sleep=existing.sleep;const sv=document.getElementById('sleep-val');if(sv)sv.textContent=existing.sleep;}
     if(existing.water!=null){C.water=existing.water;const wv=document.getElementById('water-val');if(wv)wv.textContent=existing.water;}
+    if(existing.coffee!=null){C.coffee=existing.coffee;const cv=document.getElementById('coffee-val');if(cv)cv.textContent=existing.coffee;}
+    if(existing.tcaf!=null){C.tcaf=existing.tcaf;const tv=document.getElementById('tcaf-val');if(tv)tv.textContent=existing.tcaf;}
+    if(existing.therb!=null){C.therb=existing.therb;const tv2=document.getElementById('therb-val');if(tv2)tv2.textContent=existing.therb;}
+    if(existing.alcohol!=null){C.alcohol=existing.alcohol;const av=document.getElementById('alcohol-val');if(av)av.textContent=existing.alcohol;}
+    if(existing.activity&&an) an.value=existing.activity;
   }
+
   switchTab('log',document.getElementById('nav-log'));
-  checkExistingLog();
+  renderExercise();
+  // Small delay to let exercise card render before populating swim data
+  setTimeout(()=>{
+    if(existing&&existing.swam){
+      const swimTogDelayed=document.getElementById('swim-tog');
+      const swimDetDelayed=document.getElementById('swim-det');
+      const sdDelayed=document.getElementById('swim-dist');
+      const stempDelayed=document.getElementById('swim-temp');
+      if(swimTogDelayed){
+        swimTogDelayed.classList.add('on');
+        if(swimDetDelayed) swimDetDelayed.style.display='block';
+      }
+      if(sdDelayed&&existing.swimDist) sdDelayed.value=existing.swimDist;
+      if(stempDelayed&&existing.swimTemp) stempDelayed.value=existing.swimTemp;
+    }
+    checkExistingLog();
+  }, 50);
   window.scrollTo(0,0);
   showToast('Entry loaded — edit and save to update');
 }
