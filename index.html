@@ -230,6 +230,7 @@ body {
 .streak-day.done { background: var(--teal); color: white; }
 .streak-day.miss { background: var(--warm-white-2); color: var(--text-light); }
 .streak-day.migraine { background: var(--coral); color: white; }
+.streak-day.near-miss { background: var(--dawn); color: white; }
 .streak-day.today { outline: 2px solid var(--teal-dark); outline-offset: -1px; }
 
 /* EVENTS */
@@ -607,8 +608,9 @@ body {
     <div class="row">
       <div class="row-left"><div class="row-label">Type</div></div>
       <div class="gap-grid" style="max-width:220px">
-        <button class="gap-btn" id="evt-pre" onclick="selectEvent('pre')">Warning signs</button>
-        <button class="gap-btn" id="evt-full" onclick="selectEvent('full')">Full migraine</button>
+        <button class="gap-btn" id="evt-miss" onclick="selectEvent('miss')">Near miss</button>
+        <button class="gap-btn" id="evt-migraine" onclick="selectEvent('migraine')">Migraine</button>
+        <button class="gap-btn" id="evt-warning" onclick="selectEvent('warning')" style="grid-column:span 2">Warning signs only</button>
       </div>
     </div>
     <div class="row">
@@ -758,6 +760,7 @@ body {
     <div class="streak-bar" id="streak-bar"></div>
     <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--teal)"></div><span style="font-size:11px;color:var(--text-light)">Done</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--dawn)"></div><span style="font-size:11px;color:var(--text-light)">Near miss</span></div>
       <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--coral)"></div><span style="font-size:11px;color:var(--text-light)">Migraine</span></div>
       <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:var(--warm-white-2)"></div><span style="font-size:11px;color:var(--text-light)">Missed</span></div>
     </div>
@@ -930,6 +933,7 @@ function renderStreakAndCalendar(){
   }
   const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
   const migraineDates=new Set(episodes.filter(e=>e.type==='migraine').map(e=>new Date(e.date).toDateString()));
+  const nearMissDates=new Set(episodes.filter(e=>e.type==='near-miss').map(e=>new Date(e.date).toDateString()));
 
   // Streak — last 14 days
   const sBar=document.getElementById('streak-bar');
@@ -943,9 +947,10 @@ function renderStreakAndCalendar(){
       const dayLabel=['S','M','T','W','T','F','S'][d.getDay()];
       const e=document.createElement('div');
       const isMigraine=migraineDates.has(dateStr);
+      const isNearMiss=nearMissDates.has(dateStr);
       const isLogged=!!logs[dateStr];
       const isToday=i===0;
-      e.className='streak-day'+(isMigraine?' migraine':isLogged?' done':' miss')+(isToday?' today':'');
+      e.className='streak-day'+(isMigraine?' migraine':isNearMiss?' near-miss':isLogged?' done':' miss')+(isToday?' today':'');
       e.textContent=dayLabel;
       sBar.appendChild(e);
     }
@@ -970,10 +975,11 @@ function renderStreakAndCalendar(){
       const dateStr=new Date(year,month,d).toDateString();
       const e=document.createElement('div');
       const isMigraine=migraineDates.has(dateStr);
+      const isNearMiss=nearMissDates.has(dateStr);
       const isLogged=!!logs[dateStr];
       const isToday=d===today.getDate();
       const isFuture=d>today.getDate();
-      e.className='cal-day'+(isMigraine?' migraine':isLogged?' clean':isFuture?' empty':'');
+      e.className='cal-day'+(isMigraine?' migraine':isNearMiss?' near':isLogged?' clean':isFuture?' empty':'');
       if(isToday) e.classList.add('today');
       if(!isFuture||isToday) e.textContent=d;
       cg.appendChild(e);
@@ -994,8 +1000,8 @@ function renderRecentEvents(){
     const d=new Date(ep.date);
     const label=d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
     const time=ep.onsetTime?', '+ep.onsetTime:'';
-    const typeLabel=ep.type==='migraine'?'Migraine':'Warning signs';
-    const badgeClass=ep.type==='migraine'?'badge-migraine':'badge-pre';
+    const typeLabel=ep.type==='migraine'?'Migraine':ep.type==='near-miss'?'Near miss':'Warning signs';
+    const badgeClass=ep.type==='migraine'?'badge-migraine':ep.type==='near-miss'?'badge-pre':'badge-pre';
     const sev=ep.severity?'severity '+ep.severity:'';
     const meds=(ep.steps||[]).filter(s=>s.medication).map(s=>s.medication).join(' → ');
     const outcome=ep.outcome||'';
@@ -1174,9 +1180,12 @@ function selectOne(btn,group){
 }
 function selectSev(btn){document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');}
 function selectEvent(type){
-  document.getElementById('evt-pre').classList.remove('selected');
-  document.getElementById('evt-full').classList.remove('selected');
-  document.getElementById('evt-'+type).classList.add('selected');
+  ['miss','migraine','warning'].forEach(t=>{
+    const el=document.getElementById('evt-'+t);
+    if(el) el.classList.remove('selected');
+  });
+  const el=document.getElementById('evt-'+type);
+  if(el) el.classList.add('selected');
 }
 function addSupp(){
   const n=document.getElementById('supp-name').value.trim();
@@ -1251,6 +1260,7 @@ function renderReport(){
 
   // Episodes
   const migraines=episodes.filter(e=>e.type==='migraine');
+  const nearMisses=episodes.filter(e=>e.type==='near-miss');
   const warnings=episodes.filter(e=>e.type==='warning');
   const severities=migraines.filter(e=>e.severity).map(e=>parseInt(e.severity));
   const avgSeverity=severities.length?(severities.reduce((a,b)=>a+b,0)/severities.length).toFixed(1):null;
@@ -1299,7 +1309,8 @@ function renderReport(){
       <div class="report-section">
         <div class="report-section-title">Migraine events</div>
         <div class="report-row"><span class="report-key">Full migraines logged</span><span class="report-val">${migraines.length}</span></div>
-        <div class="report-row"><span class="report-key">Warning sign events</span><span class="report-val">${warnings.length}</span></div>
+        <div class="report-row"><span class="report-key">Near misses logged</span><span class="report-val">${nearMisses.length}</span></div>
+        <div class="report-row"><span class="report-key">Warning signs only</span><span class="report-val">${warnings.length}</span></div>
         <div class="report-row"><span class="report-key">Avg severity</span><span class="report-val">${avgSeverity?avgSeverity+' / 10':notEnough}</span></div>
         <div class="report-row"><span class="report-key">Onset pattern</span><span class="report-val">${onsetTimes.length?onsetPattern:notEnough}</span></div>
         <div class="report-row"><span class="report-key">Frequency trend</span><span class="report-val">${pending}</span></div>
@@ -1644,7 +1655,7 @@ function saveLog(){
   showToast(dateStr===today?'Today logged ✓':'Past entry saved ✓');
 }
 
-function renderPastEntries(){
+function renderPastEntries(showAll=false){
   const list=document.getElementById('past-entries-list');
   if(!list) return;
   try {
@@ -1663,7 +1674,11 @@ function renderPastEntries(){
       list.innerHTML='<div style="font-size:13px;color:var(--text-light);padding:.5rem 0">No entries yet — start logging to see your history here.</div>';
       return;
     }
-    list.innerHTML=entries.slice(0,10).map(e=>{
+    const limit=showAll?entries.length:10;
+    const visible=entries.slice(0,limit);
+    const showMoreBtn=(!showAll&&entries.length>10)?`<div style="text-align:center;margin-top:4px"><button onclick="renderPastEntries(true)" style="border:none;background:none;cursor:pointer;color:var(--teal);font-size:13px;font-family:var(--font-sans);padding:8px">Show all ${entries.length} entries</button></div>`:'';
+    const showLessBtn=(showAll&&entries.length>10)?`<div style="text-align:center;margin-top:4px"><button onclick="renderPastEntries(false)" style="border:none;background:none;cursor:pointer;color:var(--text-light);font-size:13px;font-family:var(--font-sans);padding:8px">Show less</button></div>`:'';
+    list.innerHTML=visible.map(e=>{
       const d=new Date(e.date);
       const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
       const swim=e.swam?'Swim'+(e.swimDist?' '+e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
@@ -1680,7 +1695,7 @@ function renderPastEntries(){
         </div>
         <div style="font-size:12px;color:var(--text-light)">${details}</div>
       </div>`;
-    }).join('');
+    }).join('')+showMoreBtn+showLessBtn;
   } catch(err) {
     list.innerHTML='<div style="font-size:12px;color:var(--text-light)">Unable to load entries.</div>';
   }
@@ -1846,12 +1861,17 @@ function saveEvent(){
   });
   const eventDate=document.getElementById('event-date')?.value||new Date().toISOString().split('T')[0];
   const onsetTime=document.getElementById('onset-time')?.value||'';
-  // Prevent duplicates — check if identical episode exists within last 5 minutes
+  const getEventType=()=>{
+    if(document.getElementById('evt-migraine')?.classList.contains('selected')) return 'migraine';
+    if(document.getElementById('evt-miss')?.classList.contains('selected')) return 'near-miss';
+    return 'warning';
+  };
+  // Prevent duplicates
   const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
   const isDuplicate=episodes.some(ep=>
     ep.date===eventDate&&
     ep.onsetTime===onsetTime&&
-    ep.type===(document.getElementById('evt-full')?.classList.contains('selected')?'migraine':'warning')&&
+    ep.type===getEventType()&&
     (Date.now()-parseInt(ep.id.replace('ep-',''))<300000)
   );
   if(isDuplicate){
@@ -1862,7 +1882,7 @@ function saveEvent(){
   const episode={
     id:'ep-'+Date.now(),
     date:eventDate,
-    type:document.getElementById('evt-full')?.classList.contains('selected')?'migraine':'warning',
+    type:getEventType(),
     onsetTime:onsetTime,
     severity:document.querySelector('.sev-btn.sel')?.textContent||'',
     warnings:Array.from(document.querySelectorAll('#main-event .flag-btn.selected')).map(b=>b.textContent),
@@ -1936,7 +1956,7 @@ function startEpisode(){
   const ot=document.getElementById('onset-time');
   if(ed) ed.value=now.toISOString().split('T')[0];
   if(ot) ot.value=now.toTimeString().slice(0,5);
-  document.getElementById('evt-full').classList.add('selected');
+  document.getElementById('evt-migraine').classList.add('selected');
 }
 
 function showActiveEpisode(){
@@ -2010,7 +2030,7 @@ function renderRecentEpisodes(){
   list.innerHTML=episodes.slice(0,5).map(ep=>{
     const d=new Date(ep.date);
     const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
-    const typeLabel=ep.type==='migraine'?'Migraine':'Warning signs';
+    const typeLabel=ep.type==='migraine'?'Migraine':ep.type==='near-miss'?'Near miss':'Warning signs';
     const badge=ep.type==='migraine'?'badge-migraine':'badge-pre';
     const stepsText=ep.steps&&ep.steps.length?ep.steps.map(s=>s.medication).filter(Boolean).join(' → '):'No treatment logged';
     const outcome=ep.outcome||'Outcome not logged';
