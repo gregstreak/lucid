@@ -1007,11 +1007,12 @@ function renderRecentEvents(){
     const outcome=ep.outcome||'';
     return `<div class="event-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
+        <div style="flex:1">
           <div class="event-time">${label}${time}</div>
           <div class="event-title">${sev?sev+' · ':''}${meds||'No treatment logged'}</div>
           <span class="badge ${badgeClass}">${typeLabel}</span>${outcome?` <span class="badge badge-resolved">${outcome}</span>`:''}
         </div>
+        <button onclick="loadEpisodeForEdit('${ep.id}')" style="border:none;background:none;cursor:pointer;color:var(--teal);font-size:12px;font-family:var(--font-sans);padding:2px 0 0 12px;white-space:nowrap">Edit</button>
       </div>
     </div>`;
   }).join('');
@@ -1842,11 +1843,94 @@ function loadEntryForEdit(dateStr){
   window.scrollTo(0,0);
   showToast('Entry loaded — edit and save to update');
 }
+function loadEpisodeForEdit(id){
+  const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
+  const ep=episodes.find(e=>e.id===id);
+  if(!ep) return;
+
+  // Reset event form
+  ['miss','migraine','warning'].forEach(t=>{
+    const el=document.getElementById('evt-'+t);
+    if(el) el.classList.remove('selected');
+  });
+  document.querySelectorAll('.sev-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('#main-event .flag-btn.selected').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('#main-event .toggle.on').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('#main-event .gap-btn.selected').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('treatment-steps').innerHTML='';
+  const episodeNotes=document.getElementById('episode-notes');
+  if(episodeNotes) episodeNotes.value='';
+  const resolveTime=document.getElementById('resolve-time');
+  if(resolveTime) resolveTime.value='';
+
+  // Set date and time
+  const ed=document.getElementById('event-date');
+  if(ed&&ep.date) ed.value=ep.date;
+  const ot=document.getElementById('onset-time');
+  if(ot&&ep.onsetTime) ot.value=ep.onsetTime;
+
+  // Set type
+  const typeMap={migraine:'migraine','near-miss':'miss',warning:'warning'};
+  const typeBtn=document.getElementById('evt-'+(typeMap[ep.type]||'migraine'));
+  if(typeBtn) typeBtn.classList.add('selected');
+
+  // Set severity
+  if(ep.severity){
+    document.querySelectorAll('.sev-btn').forEach(b=>{
+      if(b.textContent===ep.severity) b.classList.add('sel');
+    });
+  }
+
+  // Set warning signs
+  if(ep.warnings&&ep.warnings.length){
+    document.querySelectorAll('#main-event .flag-btn').forEach(b=>{
+      if(ep.warnings.includes(b.textContent)) b.classList.add('selected');
+    });
+  }
+
+  // Restore treatment steps
+  if(ep.steps&&ep.steps.length){
+    ep.steps.forEach(s=>{
+      addTreatmentStepInline();
+      const cards=document.querySelectorAll('.treatment-step-card');
+      const card=cards[cards.length-1];
+      if(card){
+        const medEl=card.querySelector('.step-med');
+        const timeEl=card.querySelector('.step-time');
+        const reliefEl=card.querySelector('.step-relief');
+        if(medEl) medEl.value=s.medication||'';
+        if(timeEl) timeEl.value=s.time||'';
+        if(reliefEl) reliefEl.value=s.relief||'';
+      }
+    });
+  }
+
+  // Set outcome
+  if(ep.outcome){
+    document.querySelectorAll('#main-event .gap-btn').forEach(b=>{
+      if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'outcome'")&&b.textContent===ep.outcome){
+        b.classList.add('selected');
+      }
+    });
+  }
+
+  if(resolveTime&&ep.resolveTime) resolveTime.value=ep.resolveTime;
+  if(episodeNotes&&ep.notes) episodeNotes.value=ep.notes;
+
+  // Store the ID being edited so saveEvent can overwrite rather than create
+  document.getElementById('main-event').dataset.editingId=id;
+
+  switchTab('event',document.getElementById('nav-event'));
+  window.scrollTo(0,0);
+  showToast('Episode loaded — edit and save to update');
+}
+
 function saveEvent(){
   const saveBtn=document.querySelector('#main-event .btn-primary');
   if(saveBtn) saveBtn.disabled=true;
+  const editingId=document.getElementById('main-event')?.dataset.editingId||null;
   const steps=[];
-  document.querySelectorAll('.treatment-step-card').forEach((card,i)=>{
+  document.querySelectorAll('.treatment-step-card').forEach((card)=>{
     steps.push({
       time:card.querySelector('.step-time')?.value||'',
       medication:card.querySelector('.step-med')?.value||'',
@@ -1860,40 +1944,46 @@ function saveEvent(){
     if(document.getElementById('evt-miss')?.classList.contains('selected')) return 'near-miss';
     return 'warning';
   };
-  // Prevent duplicates
   const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
-  const isDuplicate=episodes.some(ep=>
-    ep.date===eventDate&&
-    ep.onsetTime===onsetTime&&
-    ep.type===getEventType()&&
-    (Date.now()-parseInt(ep.id.replace('ep-',''))<300000)
-  );
-  if(isDuplicate){
-    showToast('Already saved — no duplicate created');
-    if(saveBtn) saveBtn.disabled=false;
-    return;
+  if(!editingId){
+    const isDuplicate=episodes.some(ep=>
+      ep.date===eventDate&&
+      ep.onsetTime===onsetTime&&
+      ep.type===getEventType()&&
+      (Date.now()-parseInt(ep.id.replace('ep-',''))<300000)
+    );
+    if(isDuplicate){
+      showToast('Already saved — no duplicate created');
+      if(saveBtn) saveBtn.disabled=false;
+      return;
+    }
   }
   const episode={
-    id:'ep-'+Date.now(),
+    id:editingId||'ep-'+Date.now(),
     date:eventDate,
     type:getEventType(),
     onsetTime:onsetTime,
     severity:document.querySelector('.sev-btn.sel')?.textContent||'',
     warnings:Array.from(document.querySelectorAll('#main-event .flag-btn.selected')).map(b=>b.textContent),
     steps:steps,
-    outcome:document.querySelector('.gap-btn.selected[onclick*="outcome"]')?.textContent||'',
+    outcome:document.querySelector('#main-event .gap-btn.selected[onclick*="outcome"]')?.textContent||'',
     resolveTime:document.getElementById('resolve-time')?.value||'',
     notes:document.getElementById('episode-notes')?.value||''
   };
-  episodes.unshift(episode);
-  localStorage.setItem('lucid-episodes',JSON.stringify(episodes));
+  let updated;
+  if(editingId){
+    updated=episodes.map(ep=>ep.id===editingId?episode:ep);
+  } else {
+    updated=[episode,...episodes];
+  }
+  localStorage.setItem('lucid-episodes',JSON.stringify(updated));
+  if(document.getElementById('main-event')) delete document.getElementById('main-event').dataset.editingId;
   clearActiveEpisode();
-
   renderRecentEvents();
   renderDashStats();
   renderStreakAndCalendar();
-  if(saveBtn) setTimeout(()=>saveBtn.disabled=false, 2000);
-  showToast('Episode saved ✓');
+  if(saveBtn) setTimeout(()=>saveBtn.disabled=false,2000);
+  showToast(editingId?'Episode updated ✓':'Episode saved ✓');
 }
 
 let treatmentStepCount=0;
