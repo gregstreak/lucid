@@ -786,6 +786,10 @@ body {
 
   <div class="section-label">Past entries</div>
   <div id="past-entries-list"></div>
+  <div class="card" style="margin-bottom:.75rem">
+    <button onclick="debugStorage()" style="width:100%;padding:8px;border:none;background:var(--teal-light);border-radius:var(--radius-sm);font-size:12px;color:var(--teal-deeper);cursor:pointer;font-family:var(--font-sans)">Debug — check local storage</button>
+    <div id="debug-output" style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.6;display:none;word-break:break-all"></div>
+  </div>
 
   <div class="section-label">Emerging pattern</div>
   <div class="analysis-card" id="analysis-card">
@@ -1592,40 +1596,61 @@ function saveLog(){
   showToast(dateStr===today?'Today logged ✓':'Past entry saved ✓');
 }
 
+function debugStorage(){
+  const out=document.getElementById('debug-output');
+  if(!out) return;
+  out.style.display='block';
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++) keys.push(localStorage.key(i));
+  const logKeys=keys.filter(k=>k.startsWith('lucid-log-'));
+  const supps=localStorage.getItem('lucid-supps');
+  const profile=localStorage.getItem('lucid-profile');
+  const count=localStorage.getItem('lucid-entry-count');
+  out.innerHTML=`
+    <strong>Entry count:</strong> ${count||'not set'}<br>
+    <strong>Log keys found:</strong> ${logKeys.length} (${logKeys.slice(0,3).join(', ')}${logKeys.length>3?'...':''})<br>
+    <strong>Supplements saved:</strong> ${supps?JSON.parse(supps).length+' items':'none'}<br>
+    <strong>Profile saved:</strong> ${profile?'yes — '+JSON.parse(profile).name:'no'}<br>
+    <strong>All lucid keys:</strong> ${keys.filter(k=>k.startsWith('lucid')).join(', ')||'none'}
+  `;
+}
+
 function renderPastEntries(){
   const list=document.getElementById('past-entries-list');
   if(!list) return;
-  const entries=[];
-  for(let i=0;i<localStorage.length;i++){
-    const key=localStorage.key(i);
-    if(key&&key.startsWith('lucid-log-')){
-      try{
-        const entry=JSON.parse(localStorage.getItem(key));
-        entries.push(entry);
-      }catch(e){}
+  try {
+    const entries=[];
+    for(let i=0;i<localStorage.length;i++){
+      const key=localStorage.key(i);
+      if(key&&key.startsWith('lucid-log-')){
+        try{const entry=JSON.parse(localStorage.getItem(key));if(entry&&entry.date)entries.push(entry);}catch(e){}
+      }
     }
+    entries.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    if(entries.length===0){
+      list.innerHTML='<div style="font-size:13px;color:var(--text-light);padding:.5rem 0">No entries yet — start logging to see your history here.</div>';
+      return;
+    }
+    list.innerHTML=entries.slice(0,10).map(e=>{
+      const d=new Date(e.date);
+      const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+      const swim=e.swam?'Swim'+(e.swimDist?' '+e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
+      const sleep=e.sleep?e.sleep+'h sleep':'';
+      const suppTotal=e.suppTotal||e.protocolCount||0;
+      const supps=suppTotal?suppTotal+' supplements':'';
+      const activity=e.activity||'';
+      const details=[swim,sleep,supps,activity].filter(Boolean).join(' · ');
+      return `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="loadEntryForEdit('${e.date}')">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}</div>
+          <div style="font-size:11px;color:var(--teal);background:var(--teal-light);padding:2px 8px;border-radius:6px">Edit</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-light)">${details}</div>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    list.innerHTML='<div style="font-size:12px;color:var(--text-light)">Unable to load entries.</div>';
   }
-  entries.sort((a,b)=>new Date(b.date)-new Date(a.date));
-  if(entries.length===0){
-    list.innerHTML='<div style="font-size:13px;color:var(--text-light);padding:.5rem 0">No entries yet — start logging to see your history here.</div>';
-    return;
-  }
-  list.innerHTML=entries.slice(0,10).map(e=>{
-    const d=new Date(e.date);
-    const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
-    const swim=e.swam?'Swim '+( e.swimDist?e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
-    const sleep=e.sleep?e.sleep+'h sleep':'';
-    const supps=e.protocolCount?e.protocolCount+'/4 supplements':'';
-    const activity=e.activity||'';
-    const details=[swim,sleep,supps,activity].filter(Boolean).join(' · ');
-    return `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="loadEntryForEdit('${e.date}')">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}</div>
-        <div style="font-size:11px;color:var(--teal);background:var(--teal-light);padding:2px 8px;border-radius:6px">Edit</div>
-      </div>
-      <div style="font-size:12px;color:var(--text-light)">${details}</div>
-    </div>`;
-  }).join('');
 }
 
 function loadEntryForEdit(dateStr){
