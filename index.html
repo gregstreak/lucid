@@ -570,6 +570,20 @@ body {
     </div>
   </div>
 
+  <div class="section-label">Daily activity</div>
+  <div class="section-note">How did you spend most of today?</div>
+  <div class="card">
+    <div class="row" style="flex-wrap:wrap;gap:8px;border-bottom:none;padding-bottom:0">
+      <div class="flag-grid" style="width:100%;margin-bottom:8px">
+        <button class="flag-btn" onclick="selectActivity(this)">Desk / screen heavy</button>
+        <button class="flag-btn" onclick="selectActivity(this)">Physical outdoors</button>
+        <button class="flag-btn" onclick="selectActivity(this)">Light activity</button>
+        <button class="flag-btn" onclick="selectActivity(this)">Rest day</button>
+      </div>
+      <input class="input-field" id="activity-note" type="text" placeholder="Anything else worth noting about today…">
+    </div>
+  </div>
+
   <div class="section-label">Known general triggers</div>
   <div class="section-note">Research-backed triggers — did any apply today?</div>
   <div class="card">
@@ -822,7 +836,7 @@ body {
   <div class="section-label" style="margin-top:0">About you</div>
   <div class="card">
     <div class="row"><div class="row-left"><div class="row-label">First name</div></div><input class="input-field" id="s-name" type="text" placeholder="Your name" style="width:140px"></div>
-    <div class="row"><div class="row-left"><div class="row-label">Age range</div></div><select class="select-field" id="s-age" style="width:140px"><option>Under 25</option><option>25–34</option><option>35–44</option><option>45–54</option><option>55–64</option><option>65+</option></select></div>
+    <div class="row"><div class="row-left"><div class="row-label">Age range</div></div><select class="select-field" id="s-age" style="width:140px"><option>Under 25</option><option>25–34</option><option>35–44</option><option>45–54</option><option selected>55–64</option><option>65+</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Biological sex</div></div><select class="select-field" id="s-sex" style="width:140px"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Years suffering</div></div><select class="select-field" id="s-years" style="width:140px"><option>Under 1</option><option>1–3</option><option>3–5</option><option>5–10</option><option>10–20</option><option>20+ years</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Avg migraines / month</div></div><select class="select-field" id="s-freq" style="width:140px"><option>1–2</option><option>3–5</option><option>6–10</option><option>10+</option></select></div>
@@ -1143,6 +1157,10 @@ function toggleFood(){
   const o=d.classList.toggle('open');
   b.textContent=o?'− Hide food log':'+ Add today\'s meals';
 }
+function selectActivity(btn){
+  btn.closest('.flag-grid').querySelectorAll('.flag-btn').forEach(b=>b.classList.remove('selected-teal'));
+  btn.classList.add('selected-teal');
+}
 function selectGap(btn){
   btn.closest('.gap-grid').querySelectorAll('.gap-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
@@ -1413,7 +1431,9 @@ function renderExercise(){
   if(!card) return;
   const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
   const exercises=profile.exercises||[];
-  const isSwimmer=exercises.some(e=>e.toLowerCase().includes('swim'));
+  // Show swim if explicitly selected, or if no exercises saved yet (default to showing)
+  const isSwimmer=exercises.length===0||exercises.some(e=>e.toLowerCase().includes('swim'));
+  const magDose=getMainMagDose();
   let html='';
   if(isSwimmer){
     html+=`<div class="row"><div class="row-left"><div class="row-label">Open water swim</div></div><button class="toggle" id="swim-tog" onclick="this.classList.toggle('on');toggleEl('swim-det',this)"></button></div>
@@ -1421,7 +1441,7 @@ function renderExercise(){
       <div class="counter-row"><div class="row-left"><div class="row-label">Distance (km)</div></div><input class="temp-input" id="swim-dist" type="number" placeholder="2.0" step="0.1" min="0"></div>
       <div class="counter-row"><div class="row-left"><div class="row-label">Water temp (°C) <button class="info-btn" onclick="toggleInfo('i-temp')">i</button></div><div class="info-panel" id="i-temp">Below 15°C activates the trigeminal nerve more strongly and creates a larger stress hormone response. Track consistently — patterns often cluster around a specific threshold.</div></div><input class="temp-input" id="swim-temp" type="number" placeholder="18" min="0" max="35"></div>
       <div class="row"><div class="row-left"><div class="row-label">Post-swim electrolytes <button class="info-btn" onclick="toggleInfo('i-elec')">i</button></div><div class="info-panel" id="i-elec">Plain water doesn't replace sodium, potassium, and magnesium lost through swimming. A drink with sodium and potassium chloride immediately post-swim restores balance before your body registers the deficit.</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">${getMainMagDose()}</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+      <div class="row"><div class="row-left"><div class="row-label">Extra magnesium post-swim</div><div class="row-sub">${magDose}</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
     </div>`;
   }
   html+=`<div class="row" style="border-bottom:none;padding-bottom:0"><div class="row-left"><div class="row-label">Other exercise today</div></div><button class="toggle" id="other-tog" onclick="this.classList.toggle('on');toggleEl('other-det',this)"></button></div>
@@ -1555,7 +1575,9 @@ function saveLog(){
     swimTemp:swimTemp?swimTemp.value:'',
     sleep:C.sleep,water:C.water,coffee:C.coffee,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
-    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length
+    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length,
+    activity:document.querySelector('.flag-grid .flag-btn.selected-teal')?.textContent||'',
+    activityNote:document.getElementById('activity-note')?.value||''
   };
   localStorage.setItem('lucid-log-'+dateStr,JSON.stringify(logData));
   if(isNew){
@@ -1594,7 +1616,8 @@ function renderPastEntries(){
     const swim=e.swam?'Swim '+( e.swimDist?e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
     const sleep=e.sleep?e.sleep+'h sleep':'';
     const supps=e.protocolCount?e.protocolCount+'/4 supplements':'';
-    const details=[swim,sleep,supps].filter(Boolean).join(' · ');
+    const activity=e.activity||'';
+    const details=[swim,sleep,supps,activity].filter(Boolean).join(' · ');
     return `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="loadEntryForEdit('${e.date}')">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}</div>
