@@ -516,8 +516,8 @@ body {
   <div class="section-label">Sleep</div>
   <div class="card">
     <div class="counter-row"><div class="row-left"><div class="row-label">Hours slept</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('sleep',-.5)">−</button><div class="counter-val" id="sleep-val">7</div><button class="counter-btn" onclick="adjustCounter('sleep',.5)">+</button></div></div>
-    <div class="row"><div class="row-left"><div class="row-label">Woke during the night</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Woke before 5am</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Woke during the night</div></div><button class="toggle" id="tog-woke-during" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Woke before 5am</div></div><button class="toggle" id="tog-woke-before" onclick="this.classList.toggle('on')"></button></div>
   </div>
 
   <div class="section-label">Hydration</div>
@@ -528,19 +528,19 @@ body {
     <div class="counter-row"><div class="row-left"><div class="row-label">Black / green tea <span class="tag tag-caffeine">caffeine</span></div><div class="row-sub">cups</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('tcaf',-1)">−</button><div class="counter-val" id="tcaf-val">0</div><button class="counter-btn" onclick="adjustCounter('tcaf',1)">+</button></div></div>
     <div class="counter-row"><div class="row-left"><div class="row-label">Rooibos / herbal <span class="tag tag-free">caffeine-free</span></div><div class="row-sub">cups</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('therb',-1)">−</button><div class="counter-val" id="therb-val">0</div><button class="counter-btn" onclick="adjustCounter('therb',1)">+</button></div></div>
     <div class="counter-row"><div class="row-left"><div class="row-label">Alcohol</div><div class="row-sub">standard drinks</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('alcohol',-1)">−</button><div class="counter-val" id="alcohol-val">0</div><button class="counter-btn" onclick="adjustCounter('alcohol',1)">+</button></div></div>
-    <div class="row"><div class="row-left"><div class="row-label">Sugary drinks</div><div class="row-sub">cola, juice, energy drinks</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Sugary drinks</div><div class="row-sub">cola, juice, energy drinks</div></div><button class="toggle" id="tog-sugary" onclick="this.classList.toggle('on')"></button></div>
   </div>
 
   <div class="section-label">Nutrition</div>
   <div class="section-note">Specific questions — not a food diary</div>
   <div class="card">
-    <div class="row"><div class="row-left"><div class="row-label">Ate within 2 hrs of waking</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Ate within 2 hrs of waking</div></div><button class="toggle" id="tog-ate-woke" onclick="this.classList.toggle('on')"></button></div>
     <div class="row" style="flex-wrap:wrap;gap:8px">
       <div class="row-left"><div class="row-label">Longest gap between meals <button class="info-btn" onclick="toggleInfo('i-gap')">i</button></div><div class="info-panel" id="i-gap">Going more than 5–6 hours without eating causes blood sugar to drop, triggering a stress hormone response — one of the more reliable migraine triggers.</div></div>
       <div class="gap-grid" style="width:100%;margin-top:6px"><button class="gap-btn" onclick="selectGap(this)">Under 4 hrs</button><button class="gap-btn" onclick="selectGap(this)">4–6 hrs</button><button class="gap-btn" onclick="selectGap(this)">6–8 hrs</button><button class="gap-btn" onclick="selectGap(this)">8+ hrs</button></div>
     </div>
-    <div class="row"><div class="row-left"><div class="row-label">Meal with significant protein</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-    <div class="row"><div class="row-left"><div class="row-label">Bedtime snack <button class="info-btn" onclick="toggleInfo('i-snack')">i</button></div><div class="info-panel" id="i-snack">Blood sugar drops naturally around 2–4am — a common migraine onset window. A small slow-release carbohydrate before sleep (two Medjool dates, a banana, a small bowl of oats) buffers this trough. Most useful on exercise days. Not about eating more — about preventing a specific overnight trigger.</div><div class="row-sub">Dates, banana, oats — slow-release carb only</div></div><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Meal with significant protein</div></div><button class="toggle" id="tog-protein" onclick="this.classList.toggle('on')"></button></div>
+    <div class="row"><div class="row-left"><div class="row-label">Bedtime snack <button class="info-btn" onclick="toggleInfo('i-snack')">i</button></div><div class="info-panel" id="i-snack">Blood sugar drops naturally around 2–4am — a common migraine onset window. A small slow-release carbohydrate before sleep (two Medjool dates, a banana, a small bowl of oats) buffers this trough. Most useful on exercise days. Not about eating more — about preventing a specific overnight trigger.</div><div class="row-sub">Dates, banana, oats — slow-release carb only</div></div><button class="toggle" id="tog-bedtime-snack" onclick="this.classList.toggle('on')"></button></div>
   </div>
 
   <div class="section-label">Detailed food log</div>
@@ -1600,18 +1600,18 @@ function saveLog(){
   };
 
   // Capture nutrition toggles by querying the nutrition card directly
-  const ateWoke=document.querySelector('#main-log .card:nth-of-type(4) .toggle:nth-of-type(1)');
-  const protein=document.querySelector('#main-log .card:nth-of-type(4) .toggle:nth-of-type(2)');
-  const bedtimeSnack=document.querySelector('#main-log .card:nth-of-type(4) .toggle:nth-of-type(3)');
+  const ateWoke=document.getElementById('tog-ate-woke');
+  const protein=document.getElementById('tog-protein');
+  const bedtimeSnack=document.getElementById('tog-bedtime-snack');
   const mealGap=document.querySelector('#main-log .gap-btn.selected')?.textContent||'';
 
   // Capture triggers
   const triggersLogged=Array.from(document.querySelectorAll('#main-log .flag-btn.selected')).map(b=>b.textContent);
 
   // Capture woke toggles
-  const wokeDuring=document.querySelector('#main-log #sleep-val')?.closest('.card')?.querySelectorAll('.toggle')[0];
-  const wokeBefore=document.querySelector('#main-log #sleep-val')?.closest('.card')?.querySelectorAll('.toggle')[1];
-  const sugaryDrinks=document.querySelector('#main-log #alcohol-val')?.closest('.card')?.querySelectorAll('.toggle:last-of-type')[0];
+  const wokeDuring=document.getElementById('tog-woke-during');
+  const wokeBefore=document.getElementById('tog-woke-before');
+  const sugaryDrinks=document.getElementById('tog-sugary');
 
   const logData={
     date:dateStr,
@@ -1728,8 +1728,11 @@ function loadEntryForEdit(dateStr){
   const fb=document.getElementById('food-expand-btn');
   if(fd) fd.classList.remove('open');
   if(fb) fb.textContent='+ Add today\'s meals';
-  // Clear activity flags
-  document.querySelectorAll('#main-log .flag-btn.selected-teal').forEach(b=>b.classList.remove('selected-teal'));
+  // Reset nutrition toggles by ID
+  ['tog-ate-woke','tog-protein','tog-bedtime-snack'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('on');
+  });
   // Clear gap buttons
   document.querySelectorAll('#main-log .gap-btn.selected').forEach(b=>b.classList.remove('selected'));
   // Clear flag buttons
@@ -1787,18 +1790,22 @@ function loadEntryForEdit(dateStr){
       });
     }
     // Restore woke toggles
-    const sleepToggles=document.querySelector('#sleep-val')?.closest('.card')?.querySelectorAll('.toggle');
-    if(sleepToggles){
-      if(existing.wokeDuring&&sleepToggles[0]) sleepToggles[0].classList.add('on');
-      if(existing.wokeBefore&&sleepToggles[1]) sleepToggles[1].classList.add('on');
+    const wokeDuringTog=document.getElementById('tog-woke-during');
+    const wokeBeforeTog=document.getElementById('tog-woke-before');
+    if(existing.wokeDuring&&wokeDuringTog) wokeDuringTog.classList.add('on');
+    if(existing.wokeBefore&&wokeBeforeTog) wokeBeforeTog.classList.add('on');
+    // Restore sugary drinks
+    if(existing.sugaryDrinks){
+      const sugaryEl=document.getElementById('tog-sugary');
+      if(sugaryEl) sugaryEl.classList.add('on');
     }
-    // Restore nutrition toggles
-    const nutToggles=document.querySelector('#activity-note')?.closest('.card')?.previousElementSibling?.querySelectorAll('.toggle');
-    if(nutToggles){
-      if(existing.ateWoke&&nutToggles[0]) nutToggles[0].classList.add('on');
-      if(existing.protein&&nutToggles[1]) nutToggles[1].classList.add('on');
-      if(existing.bedtimeSnack&&nutToggles[2]) nutToggles[2].classList.add('on');
-    }
+    // Restore nutrition toggles by ID
+    const ateWokeTog=document.getElementById('tog-ate-woke');
+    const proteinTog=document.getElementById('tog-protein');
+    const bedtimeSnackTog=document.getElementById('tog-bedtime-snack');
+    if(existing.ateWoke&&ateWokeTog) ateWokeTog.classList.add('on');
+    if(existing.protein&&proteinTog) proteinTog.classList.add('on');
+    if(existing.bedtimeSnack&&bedtimeSnackTog) bedtimeSnackTog.classList.add('on');
   }
 
   switchTab('log',document.getElementById('nav-log'));
