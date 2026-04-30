@@ -1466,7 +1466,7 @@ function renderExercise(){
     </div>`;
   }
   html+=`<div class="row" style="border-bottom:none;padding-bottom:0"><div class="row-left"><div class="row-label">Other exercise today</div></div><button class="toggle" id="other-tog" onclick="this.classList.toggle('on');toggleEl('other-det',this)"></button></div>
-  <div id="other-det" style="display:none;padding-top:8px"><input class="input-field" type="text" placeholder="e.g. golf, run — type and duration"></div>`;
+  <div id="other-det" style="display:none;padding-top:8px"><input class="input-field" id="other-exercise-text" type="text" placeholder="e.g. golf, run — type and duration"></div>`;
   card.innerHTML=html;
 }
 
@@ -1642,7 +1642,8 @@ function saveLog(){
     mealGap:mealGap,
     protein:protein?protein.classList.contains('on'):false,
     bedtimeSnack:bedtimeSnack?bedtimeSnack.classList.contains('on'):false,
-    activity:document.querySelector('#main-log .flag-btn.selected-teal')?.textContent||'',
+    otherExercise:document.getElementById('other-tog')?document.getElementById('other-tog').classList.contains('on'):false,
+    otherExerciseText:document.getElementById('other-exercise-text')?document.getElementById('other-exercise-text').value:'',
     activityNote:document.getElementById('activity-note')?.value||'',
     foods:foods,
     triggers:triggersLogged,
@@ -1705,11 +1706,12 @@ function renderPastEntries(){
       const d=new Date(e.date);
       const label=d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
       const swim=e.swam?'Swim'+(e.swimDist?' '+e.swimDist+'km':'')+(e.swimTemp?' · '+e.swimTemp+'°C':''):'No swim';
+      const otherEx=e.otherExercise&&e.otherExerciseText?e.otherExerciseText:(e.otherExercise?'Other exercise':'');
       const sleep=e.sleep?e.sleep+'h sleep':'';
       const suppTotal=e.suppTotal||e.protocolCount||0;
       const supps=suppTotal?suppTotal+' supplements':'';
       const activity=e.activity||'';
-      const details=[swim,sleep,supps,activity].filter(Boolean).join(' · ');
+      const details=[swim,otherEx,sleep,supps,activity].filter(Boolean).join(' · ');
       return `<div class="card" style="margin-bottom:8px;cursor:pointer" onclick="loadEntryForEdit('${e.date}')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <div style="font-size:13px;font-weight:500;color:var(--text-dark)">${label}</div>
@@ -1745,6 +1747,15 @@ function loadEntryForEdit(dateStr){
   // Clear text fields
   const an=document.getElementById('activity-note');
   if(an) an.value='';
+  // Clear food diary completely
+  const foodFields=document.querySelectorAll('#food-detail .textarea-field');
+  foodFields.forEach(f=>f.value='');
+  const snackTimeEl=document.querySelector('#food-detail input[type="time"]');
+  if(snackTimeEl) snackTimeEl.value='';
+  const fd=document.getElementById('food-detail');
+  const fb=document.getElementById('food-expand-btn');
+  if(fd) fd.classList.remove('open');
+  if(fb) fb.textContent='+ Add today\'s meals';
   // Clear activity flags
   document.querySelectorAll('#main-log .flag-btn.selected-teal').forEach(b=>b.classList.remove('selected-teal'));
   // Clear gap buttons
@@ -1839,6 +1850,15 @@ function loadEntryForEdit(dateStr){
         if(existing.swimElec&&swimDetailToggles[0]) swimDetailToggles[0].classList.add('on');
         if(existing.swimMag&&swimDetailToggles[1]) swimDetailToggles[1].classList.add('on');
       }
+    }
+    // Restore other exercise
+    if(existing&&existing.otherExercise){
+      const otherTog=document.getElementById('other-tog');
+      const otherDet=document.getElementById('other-det');
+      const otherText=document.getElementById('other-exercise-text');
+      if(otherTog) otherTog.classList.add('on');
+      if(otherDet) otherDet.style.display='block';
+      if(otherText&&existing.otherExerciseText) otherText.value=existing.otherExerciseText;
     }
     // Restore supplement toggle states
     if(existing&&existing.suppStates){
