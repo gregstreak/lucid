@@ -2286,13 +2286,23 @@ if('serviceWorker' in navigator){
       document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
       navLog.classList.add('active');
     }
-    // Set dates
+    // Always set today's date on fresh load
     const now=new Date();
     const dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
     const dp=document.getElementById('log-date');
-    if(dp&&!dp.value) dp.value=dateStr;
+    if(dp) dp.value=dateStr;
     const ed=document.getElementById('event-date');
     if(ed&&!ed.value) ed.value=dateStr;
+    // Reset all toggles to clean state for today
+    document.querySelectorAll('#main-log .toggle.on').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('#main-log .gap-btn.selected').forEach(b=>b.classList.remove('selected'));
+    document.querySelectorAll('#main-log .flag-btn.selected').forEach(b=>b.classList.remove('selected'));
+    document.querySelectorAll('#main-log .flag-btn.selected-teal').forEach(b=>b.classList.remove('selected-teal'));
+    C.sleep=7;C.water=0;C.coffee=0;C.tcaf=0;C.therb=0;C.alcohol=0;
+    ['sleep','water','coffee','tcaf','therb','alcohol'].forEach(k=>{
+      const el=document.getElementById(k+'-val');
+      if(el) el.textContent=C[k];
+    });
     // Run all renders
     renderRoutine();
     renderExercise();
