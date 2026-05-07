@@ -1060,27 +1060,11 @@ function fetchPressure(){
   const pt=document.getElementById('pressure-trend-badge');
   const pn=document.getElementById('pressure-note');
   const pa=document.getElementById('pressure-advice');
+  const pl=document.getElementById('pressure-label');
   if(pv) pv.textContent='—';
   if(pt){pt.textContent='Loading';pt.className='pressure-trend trend-stable';}
   if(pn) pn.textContent='Fetching current pressure data…';
   if(pa) pa.textContent='';
-  if(diff<-5){
-    if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}
-    if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — significant change';
-    if(pa) pa.textContent='Rapid pressure drops are a known migraine trigger for many sufferers. Consider being especially consistent with your daily routine today and ensuring your bedtime snack is not skipped tonight.';
-  } else if(diff<-2){
-    if(pt){pt.textContent='Falling';pt.className='pressure-trend trend-falling';}
-    if(pn) pn.textContent='Dropped '+Math.abs(diff).toFixed(0)+'hPa in 24hrs — moderate change';
-    if(pa) pa.textContent='Moderate pressure drop. Worth noting alongside your other variables today — particularly if you have a swim scheduled.';
-  } else if(diff>3){
-    if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}
-    if(pn) pn.textContent='Rising '+diff.toFixed(0)+'hPa — pressure stabilising';
-    if(pa) pa.textContent='Rising pressure is generally less associated with migraine onset. Continue your normal routine.';
-  } else {
-    if(pt){pt.textContent='Stable';pt.className='pressure-trend trend-stable';}
-    if(pn) pn.textContent='No significant pressure change in 24hrs';
-    if(pa) pa.textContent='Stable pressure today. No additional migraine risk from barometric changes.';
-  }
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&hourly=surface_pressure&forecast_days=1`)
@@ -1090,20 +1074,40 @@ function fetchPressure(){
           buildPressureBars(vals);
           const cur=Math.round(vals[vals.length-1]);
           const prv=Math.round(vals[vals.length-2]);
-          if(pv) pv.textContent=cur;
           const df=cur-prv;
-          if(df<-5){if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}}
-          else if(df<-2){if(pt){pt.textContent='Falling';pt.className='pressure-trend trend-falling';}}
-          else if(df>3){if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}}
+          if(pv) pv.textContent=cur;
+          if(df<-5){
+            if(pt){pt.textContent='Rapid drop';pt.className='pressure-trend trend-rapid';}
+            if(pn) pn.textContent='Dropped '+Math.abs(df).toFixed(0)+'hPa in 24hrs — significant change';
+            if(pa) pa.textContent='Rapid pressure drops are a known migraine trigger for many sufferers. Consider being especially consistent with your daily routine today and ensuring your bedtime snack is not skipped tonight.';
+          } else if(df<-2){
+            if(pt){pt.textContent='Falling';pt.className='pressure-trend trend-falling';}
+            if(pn) pn.textContent='Dropped '+Math.abs(df).toFixed(0)+'hPa in 24hrs — moderate change';
+            if(pa) pa.textContent='Moderate pressure drop. Worth noting alongside your other variables today — particularly if you have a swim scheduled.';
+          } else if(df>3){
+            if(pt){pt.textContent='Rising';pt.className='pressure-trend trend-rising';}
+            if(pn) pn.textContent='Rising '+df.toFixed(0)+'hPa — pressure stabilising';
+            if(pa) pa.textContent='Rising pressure is generally less associated with migraine onset. Continue your normal routine.';
+          } else {
+            if(pt){pt.textContent='Stable';pt.className='pressure-trend trend-stable';}
+            if(pn) pn.textContent='No significant pressure change in 24hrs';
+            if(pa) pa.textContent='Stable pressure today. No additional migraine risk from barometric changes.';
+          }
         }
-      }).catch(()=>{});
+      }).catch(()=>{
+        if(pn) pn.textContent='Pressure data unavailable';
+      });
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
       .then(r=>r.json()).then(data=>{
         const town=data.address?.town||data.address?.city||data.address?.village||'';
-        const pl=document.getElementById('pressure-label');
         if(pl&&town) pl.textContent='Barometric pressure — '+town;
       }).catch(()=>{});
-    },()=>{});
+    },()=>{
+      if(pn) pn.textContent='Location access needed for pressure data';
+      if(pt){pt.textContent='Unavailable';pt.className='pressure-trend trend-stable';}
+    },{timeout:10000});
+  } else {
+    if(pn) pn.textContent='Location not available on this device';
   }
 }
 
