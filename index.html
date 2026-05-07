@@ -2251,6 +2251,13 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),2400);
 }
 
+// Dev unlock via URL parameter
+if(new URLSearchParams(window.location.search).get('unlock')==='greg'){
+  localStorage.setItem('lucid-unlocked','true');
+  updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
+  showToast('Analysis unlocked ✓');
+}
+
 const savedCount=parseInt(localStorage.getItem('lucid-entry-count')||'0');
 updateProgress(savedCount);
 
