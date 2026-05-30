@@ -2274,15 +2274,19 @@ Write a 4-5 sentence pattern analysis. Be specific about what the numbers actual
       })
     });
     const data=await response.json();
-    const text=data.content&&data.content[0]?data.content[0].text:'Analysis complete — check your dashboard for patterns.';
+    if(!response.ok){
+      throw new Error('API error: '+response.status+' '+(data.error?.message||''));
+    }
+    const text=data.content&&data.content[0]&&data.content[0].text?data.content[0].text:null;
+    if(!text) throw new Error('No content in response');
     if(ar) ar.style.display='none';
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
     if(ab) ab.style.display='none';
   } catch(e){
     if(ar) ar.style.display='none';
-    if(at) at.textContent='Your pattern analysis';
-    if(ab){ab.style.display='block';ab.textContent='Analysis could not run at this time. Tap "Restore analysis access" in Settings to try again.';}
+    if(at) at.textContent='Analysis error';
+    if(ab){ab.style.display='block';ab.textContent='Could not run analysis: '+e.message+'. Tap "Restore analysis access" in Settings to try again.';}
   }
 }
 function showToast(msg){
