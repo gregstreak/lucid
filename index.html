@@ -1553,8 +1553,9 @@ function devUnlock(){
   localStorage.setItem('lucid-unlocked','true');
   const count=parseInt(localStorage.getItem('lucid-entry-count')||'0');
   updateProgress(count);
-  showToast('Analysis access restored ✓');
+  showToast('Analysis access restored — running now…');
   launchApp('dash');
+  setTimeout(()=>runAnalysis(), 500);
 }
 
 function saveSettings(){
