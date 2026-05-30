@@ -883,6 +883,9 @@ body {
   </div>
 
   <button class="btn-primary" onclick="saveSettings()">Save settings</button>
+  <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
+    <button onclick="devUnlock()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Restore analysis access</button>
+  </div>
 </div>
 <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center">
   <div style="background:var(--warm-white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:1.75rem 1.5rem 2rem;width:100%;max-width:430px">
@@ -1544,6 +1547,14 @@ function removeSettingsSupp(idx){
   supps.splice(idx,1);
   localStorage.setItem('lucid-supps',JSON.stringify(supps));
   populateSettings();
+}
+
+function devUnlock(){
+  localStorage.setItem('lucid-unlocked','true');
+  const count=parseInt(localStorage.getItem('lucid-entry-count')||'0');
+  updateProgress(count);
+  showToast('Analysis access restored ✓');
+  launchApp('dash');
 }
 
 function saveSettings(){
