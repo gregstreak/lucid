@@ -835,6 +835,10 @@ body {
     <div class="row"><div class="row-left"><div class="row-label">Biological sex</div></div><select class="select-field" id="s-sex" style="width:140px"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Years suffering</div></div><select class="select-field" id="s-years" style="width:140px"><option>Under 1</option><option>1–3</option><option>3–5</option><option>5–10</option><option>10–20</option><option>20+ years</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Avg migraines / month</div></div><select class="select-field" id="s-freq" style="width:140px"><option>1–2</option><option>3–5</option><option>6–10</option><option>10+</option></select></div>
+    <div class="row" style="border-bottom:none;padding-bottom:0;flex-direction:column;align-items:flex-start;gap:6px">
+      <div class="row-label">Personal history <span style="font-size:11px;color:var(--text-light);font-weight:400">— anything the analysis should know</span></div>
+      <textarea class="textarea-field" id="s-history" rows="3" placeholder="e.g. I had migraines for 20 years before I started swimming. I have tried X previously. My migraines tend to cluster around..."></textarea>
+    </div>
   </div>
 
   <div class="section-label">Your supplements</div>
@@ -883,9 +887,6 @@ body {
   </div>
 
   <button class="btn-primary" onclick="saveSettings()">Save settings</button>
-  <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
-    <button onclick="devUnlock()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Restore analysis access</button>
-  </div>
 </div>
 <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center">
   <div style="background:var(--warm-white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:1.75rem 1.5rem 2rem;width:100%;max-width:430px">
@@ -1513,6 +1514,7 @@ function populateSettings(){
   if(profile.sex){const s=document.getElementById('s-sex');if(s)s.value=profile.sex;}
   if(profile.years){const y=document.getElementById('s-years');if(y)y.value=profile.years;}
   if(profile.freq){const f=document.getElementById('s-freq');if(f)f.value=profile.freq;}
+  if(profile.history){const h=document.getElementById('s-history');if(h)h.value=profile.history;}
   const sl=document.getElementById('settings-supp-list');
   if(sl){
     if(!supps.length){sl.innerHTML='<div style="font-size:13px;color:var(--text-light)">No supplements added yet</div>';}
@@ -1549,15 +1551,6 @@ function removeSettingsSupp(idx){
   populateSettings();
 }
 
-function devUnlock(){
-  localStorage.setItem('lucid-unlocked','true');
-  const count=parseInt(localStorage.getItem('lucid-entry-count')||'0');
-  updateProgress(count);
-  showToast('Analysis access restored — running now…');
-  launchApp('dash');
-  setTimeout(()=>runAnalysis(), 500);
-}
-
 function saveSettings(){
   const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
   profile.name=document.getElementById('s-name')?.value||profile.name;
@@ -1565,6 +1558,7 @@ function saveSettings(){
   profile.sex=document.getElementById('s-sex')?.value||profile.sex;
   profile.years=document.getElementById('s-years')?.value||profile.years;
   profile.freq=document.getElementById('s-freq')?.value||profile.freq;
+  profile.history=document.getElementById('s-history')?.value||profile.history||'';
   profile.exercises=Array.from(document.querySelectorAll('#settings-exercise-grid .flag-btn.selected-teal')).map(b=>b.textContent);
   profile.triggers=Array.from(document.querySelectorAll('#settings-triggers-grid .flag-btn.selected-teal')).map(b=>b.textContent);
   profile.customTrigger=document.getElementById('s-custom-trigger')?.value||'';
@@ -2209,55 +2203,125 @@ async function runAnalysis(){
   const at=document.getElementById('analysis-title');
   const aresult=document.getElementById('analysis-result');
   const ameta=document.getElementById('analysis-meta');
-
   if(ar) ar.style.display='block';
   if(ab) ab.style.display='none';
   if(ameta) ameta.style.display='none';
+  if(aresult) aresult.style.display='none';
 
   const logs=[];
   for(let i=0;i<localStorage.length;i++){
     const key=localStorage.key(i);
-    if(key&&key.startsWith('lucid-log-')){
-      try{logs.push(JSON.parse(localStorage.getItem(key)));}catch(e){}
-    }
+    if(key&&key.startsWith('lucid-log-')){try{logs.push(JSON.parse(localStorage.getItem(key)));}catch(e){}}
   }
-
-  const swimDays=logs.filter(l=>l.swam).length;
-  const totalDays=logs.length;
-  const avgSleep=(logs.reduce((a,l)=>a+(l.sleep||7),0)/Math.max(1,totalDays)).toFixed(1);
-  const avgWater=(logs.reduce((a,l)=>a+(l.water||0),0)/Math.max(1,totalDays)).toFixed(1);
-  const protocolAvg=Math.round((logs.reduce((a,l)=>a+(l.protocolCount||0),0)/Math.max(1,totalDays))*25);
+  logs.sort((a,b)=>new Date(a.date)-new Date(b.date));
 
   const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
   const migraines=episodes.filter(e=>e.type==='migraine');
-  const onsetTimes=migraines.filter(e=>e.onsetTime).map(e=>parseInt(e.onsetTime.split(':')[0]));
-  const nightOnset=onsetTimes.filter(h=>h>=0&&h<=6).length;
+  const nearMisses=episodes.filter(e=>e.type==='near-miss');
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
+
+  const totalDays=logs.length;
+  const swimDays=logs.filter(l=>l.swam);
+  const swimTemps=swimDays.filter(l=>l.swimTemp).map(l=>parseFloat(l.swimTemp));
+  const avgSwimTemp=swimTemps.length?(swimTemps.reduce((a,b)=>a+b,0)/swimTemps.length).toFixed(1):null;
+  const sleepLogs=logs.filter(l=>l.sleep);
+  const avgSleep=sleepLogs.length?(sleepLogs.reduce((a,l)=>a+l.sleep,0)/sleepLogs.length).toFixed(1):null;
+  const waterLogs=logs.filter(l=>l.water);
+  const avgWater=waterLogs.length?(waterLogs.reduce((a,l)=>a+l.water,0)/waterLogs.length).toFixed(1):null;
   const bedtimeSnackDays=logs.filter(l=>l.bedtimeSnack).length;
-  const swimMigraineDays=migraines.filter(ep=>{
+  const proteinDays=logs.filter(l=>l.protein).length;
+  const suppTotal=supps.length||0;
+  const fullComplianceDays=suppTotal>0?logs.filter(l=>l.protocolCount>=suppTotal).length:0;
+
+  const migrainePostSwim=migraines.filter(ep=>{
     const epDate=new Date(ep.date).toDateString();
-    const prevDay=new Date(new Date(ep.date).getTime()-86400000).toDateString();
-    return logs.some(l=>l.swam&&(new Date(l.date).toDateString()===epDate||new Date(l.date).toDateString()===prevDay));
+    const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
+    return logs.some(l=>l.swam&&(new Date(l.date).toDateString()===epDate||new Date(l.date).toDateString()===prevDate));
   }).length;
-  const avgSeverity=migraines.filter(e=>e.severity).length?
-    (migraines.filter(e=>e.severity).reduce((a,e)=>a+parseInt(e.severity),0)/migraines.filter(e=>e.severity).length).toFixed(1):'unknown';
 
-  const prompt=`You are analysing migraine pattern data for a specific user. Analyse their logged data honestly and precisely.
+  const onsetHours=migraines.filter(e=>e.onsetTime).map(e=>parseInt(e.onsetTime.split(':')[0]));
+  const nightOnset=onsetHours.filter(h=>h>=0&&h<=6).length;
 
-Data summary:
-- Total days logged: ${totalDays}
-- Swim days: ${swimDays} of ${totalDays} (${Math.round(swimDays/totalDays*100)}%)
-- Total migraines logged: ${migraines.length}
-- Migraines within 24hrs of a swim day: ${swimMigraineDays} of ${migraines.length}
-- Onset times: ${nightOnset} of ${onsetTimes.length} occurred between midnight and 6am
-- Average sleep: ${avgSleep} hours
-- Average water intake: ${avgWater} glasses/day
-- Bedtime snack logged: ${bedtimeSnackDays} of ${totalDays} days (${Math.round(bedtimeSnackDays/totalDays*100)}%)
-- Average migraine severity: ${avgSeverity}/10
-- Protocol compliance: approximately ${protocolAvg}%
-- User: 55-year-old male, open water swimmer, Knysna South Africa, migraines for 30+ years
-- Water temp: 12-17°C (winter)
+  const sleepBeforeMigraine=migraines.map(ep=>{
+    const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
+    const log=logs.find(l=>new Date(l.date).toDateString()===prevDate);
+    return log?log.sleep:null;
+  }).filter(s=>s!==null);
+  const avgSleepBeforeMigraine=sleepBeforeMigraine.length?(sleepBeforeMigraine.reduce((a,b)=>a+b,0)/sleepBeforeMigraine.length).toFixed(1):null;
 
-Write a 4-5 sentence pattern analysis. Be specific about what the numbers actually show. Note what correlates strongly, what is uncertain, and what one action would most reduce risk based on this data. Direct, plain prose. No hedging, no lists, no headers.`;
+  const firstFullCompliance=suppTotal>0?logs.find(l=>l.protocolCount>=suppTotal):null;
+  const suppStartDate=firstFullCompliance?firstFullCompliance.date:null;
+  let migrainesBeforeSupps=null,migrainesAfterSupps=null,daysBeforeSupps=null,daysAfterSupps=null;
+  if(suppStartDate){
+    const suppStart=new Date(suppStartDate);
+    daysBeforeSupps=logs.filter(l=>new Date(l.date)<suppStart).length;
+    daysAfterSupps=logs.filter(l=>new Date(l.date)>=suppStart).length;
+    migrainesBeforeSupps=migraines.filter(e=>new Date(e.date)<suppStart).length;
+    migrainesAfterSupps=migraines.filter(e=>new Date(e.date)>=suppStart).length;
+  }
+
+  const severities=migraines.filter(e=>e.severity).map(e=>parseInt(e.severity));
+  const avgSeverity=severities.length?(severities.reduce((a,b)=>a+b,0)/severities.length).toFixed(1):null;
+  const allMeds=[];
+  episodes.forEach(ep=>{(ep.steps||[]).forEach(s=>{if(s.medication)allMeds.push(s.medication);});});
+  const escalations=episodes.filter(ep=>(ep.steps||[]).length>1).length;
+
+  const dataSummary=`LOGGED DATA SUMMARY
+Days logged: ${totalDays}
+Date range: ${logs.length?logs[0].date+' to '+logs[logs.length-1].date:'unknown'}
+
+USER PROFILE (self-reported)
+Age range: ${profile.age||'not provided'}
+Biological sex: ${profile.sex||'not provided'}
+Years suffering migraines: ${profile.years||'not provided'}
+Self-reported frequency before tracking: ${profile.freq||'not provided'} per month
+Known personal triggers (user-identified): ${(profile.triggers||[]).join(', ')||'none listed'}
+Personal history notes: ${profile.history||'none provided'}
+
+PREVENTION SUPPLEMENTS CURRENTLY LOGGED
+${supps.length?supps.map(s=>s.name+(s.dose?' — '+s.dose:'')).join('\n'):'none logged'}
+Full compliance days: ${fullComplianceDays} of ${totalDays}
+${suppStartDate?`
+SUPPLEMENT BEFORE/AFTER COMPARISON
+First full compliance date: ${suppStartDate}
+Before: ${daysBeforeSupps} days logged, ${migrainesBeforeSupps} migraines
+After: ${daysAfterSupps} days logged, ${migrainesAfterSupps} migraines`:''}
+
+EXERCISE
+Swim days: ${swimDays.length} of ${totalDays} (${Math.round(swimDays.length/Math.max(1,totalDays)*100)}%)
+${avgSwimTemp?'Average logged water temperature: '+avgSwimTemp+'°C':'Water temperature: not consistently logged'}
+
+SLEEP
+Average sleep: ${avgSleep||'insufficient data'} hours
+${avgSleepBeforeMigraine?'Average sleep night before a migraine: '+avgSleepBeforeMigraine+' hours':''}
+
+NUTRITION
+Average water intake: ${avgWater||'insufficient data'} glasses/day
+Bedtime snack logged: ${bedtimeSnackDays} of ${totalDays} days (${Math.round(bedtimeSnackDays/Math.max(1,totalDays)*100)}%)
+Meal with significant protein logged: ${proteinDays} of ${totalDays} days
+
+MIGRAINE EVENTS
+Total migraines logged: ${migraines.length}
+Near misses logged: ${nearMisses.length}
+Average severity: ${avgSeverity||'insufficient data'}/10
+${onsetHours.length?'Onset times: '+nightOnset+' of '+onsetHours.length+' between midnight and 6am':'Onset times: not consistently logged'}
+Migraines within 24hrs of a swim day: ${migrainePostSwim} of ${migraines.length}
+Episodes requiring escalation to second medication: ${escalations}
+Medications used: ${[...new Set(allMeds)].join(', ')||'none logged'}`;
+
+  const prompt=`You are a pattern analysis tool for a migraine tracking app. Your role is to report what the logged data actually shows — nothing more.
+
+Rules:
+- Only use what is in the data summary below
+- Make no assumptions about the user beyond what is stated
+- Do not suggest causes that are not supported by the numbers
+- If data is insufficient to conclude anything, say so clearly
+- The user specifically wants to know whether their prevention supplements are making a measurable difference — address this directly using the before/after data if available, or state that there is not yet enough data
+- Plain prose only, no lists, no headers, 4-6 sentences maximum
+
+DATA:
+${dataSummary}`;
 
   try{
     const response=await fetch('/api/analyse',{
@@ -2266,11 +2330,9 @@ Write a 4-5 sentence pattern analysis. Be specific about what the numbers actual
       body:JSON.stringify({prompt})
     });
     const data=await response.json();
-    if(!response.ok){
-      throw new Error(data.error||'API error '+response.status);
-    }
+    if(!response.ok) throw new Error(data.error||'API error '+response.status);
     const text=data.result;
-    if(!text) throw new Error('No content in response');
+    if(!text) throw new Error('No content returned');
     if(ar) ar.style.display='none';
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
@@ -2281,6 +2343,7 @@ Write a 4-5 sentence pattern analysis. Be specific about what the numbers actual
     if(ab){ab.style.display='block';ab.textContent='Could not run analysis: '+e.message+'. Tap "Restore analysis access" in Settings to try again.';}
   }
 }
+
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
