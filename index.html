@@ -1302,6 +1302,24 @@ function renderReport(){
   const nightOnset=onsetTimes.filter(h=>h>=0&&h<=5).length;
   const onsetPattern=onsetTimes.length?(nightOnset/onsetTimes.length*100).toFixed(0)+'% between midnight and 5am':'—';
 
+  // Post-swim correlation
+  const migrainePostSwim=migraines.filter(ep=>{
+    const epDate=new Date(ep.date).toDateString();
+    const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
+    return logs.some(l=>l.swam&&(new Date(l.date).toDateString()===epDate||new Date(l.date).toDateString()===prevDate));
+  }).length;
+
+  // Bedtime snack
+  const bedtimeSnackCount=logs.filter(l=>l.bedtimeSnack).length;
+
+  // Sleep before migraine
+  const sleepBeforeMigraineArr=migraines.map(ep=>{
+    const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
+    const log=logs.find(l=>new Date(l.date).toDateString()===prevDate);
+    return log?log.sleep:null;
+  }).filter(s=>s!==null);
+  const avgSleepBefore=sleepBeforeMigraineArr.length?(sleepBeforeMigraineArr.reduce((a,b)=>a+b,0)/sleepBeforeMigraineArr.length).toFixed(1):null;
+
   const pending=`<span style="color:var(--text-light);font-style:italic">Pending — unlocks with AI analysis</span>`;
   const notEnough=`<span style="color:var(--text-light);font-style:italic">Not enough data yet</span>`;
 
@@ -1372,18 +1390,26 @@ function renderReport(){
     <div class="card">
       <div class="report-section">
         <div class="report-section-title">Pattern correlations</div>
+        ${unlocked ? `
+        <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${migraines.length?migrainePostSwim+' of '+migraines.length+' migraines within 24hrs of a swim day ('+Math.round(migrainePostSwim/Math.max(1,migraines.length)*100)+'%)':'Insufficient data'}</span></div>
+        <div class="report-row"><span class="report-key">Early morning onset (midnight–6am)</span><span class="report-val">${onsetTimes.length?nightOnset+' of '+onsetTimes.length+' migraines ('+Math.round(nightOnset/Math.max(1,onsetTimes.length)*100)+'%)':'Insufficient data'}</span></div>
+        <div class="report-row"><span class="report-key">Bedtime snack compliance</span><span class="report-val">${totalLogs?bedtimeSnackCount+' of '+totalLogs+' logged days ('+Math.round(bedtimeSnackCount/Math.max(1,totalLogs)*100)+'%)':'Insufficient data'}</span></div>
+        <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${avgSleepBefore?'Avg '+avgSleepBefore+'h sleep night before a migraine':'Insufficient data'}</span></div>
+        ` : `
         <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${pending}</span></div>
         <div class="report-row"><span class="report-key">Bedtime snack correlation</span><span class="report-val">${pending}</span></div>
         <div class="report-row"><span class="report-key">Barometric pressure correlation</span><span class="report-val">${pending}</span></div>
         <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${pending}</span></div>
+        `}
       </div>
-      <div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">Correlations calculate at 20 entries and unlock with AI analysis.</div>
+      ${!unlocked?`<div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">Correlations calculate at 20 entries and unlock with AI analysis.</div>`:''}
     </div>
 
     ${unlocked
       ? `<div class="analysis-card">
           <div class="analysis-title">Pattern summary for clinical review</div>
-          <div class="analysis-body" id="report-pattern-summary">Your AI analysis findings will appear here.</div>
+          <div class="analysis-body" id="report-pattern-summary">${localStorage.getItem('lucid-analysis-result')||'Run the pattern analysis from the Dashboard to populate this section.'}</div>
+          ${localStorage.getItem('lucid-analysis-date')?`<div style="font-size:11px;color:var(--text-light);margin-top:8px">Last run: ${localStorage.getItem('lucid-analysis-date')}</div>`:''}
         </div>`
       : `<div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem">
           <div style="font-size:13px;font-weight:500;color:var(--dawn-dark);margin-bottom:6px">Pattern summary</div>
@@ -2349,6 +2375,9 @@ ${dataSummary}`;
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
     if(ab) ab.style.display='none';
+    // Save result to local storage so Report can display it
+    localStorage.setItem('lucid-analysis-result',text);
+    localStorage.setItem('lucid-analysis-date',new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}));
   } catch(e){
     if(ar) ar.style.display='none';
     if(at) at.textContent='Analysis error';
