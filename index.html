@@ -570,6 +570,7 @@ body {
         <button class="flag-btn" onclick="selectActivity(this)">Rest day</button>
       </div>
       <input class="input-field" id="activity-note" type="text" placeholder="Anything else worth noting about today…">
+      <div class="row" style="border-bottom:none;padding-bottom:0;margin-top:8px"><div class="row-left"><div class="row-label">Took regular movement / stretch breaks</div></div><button class="toggle" id="tog-movement-breaks" onclick="this.classList.toggle('on')"></button></div>
     </div>
   </div>
 
@@ -1694,6 +1695,8 @@ function saveLog(){
     otherExercise:document.getElementById('other-tog')?document.getElementById('other-tog').classList.contains('on'):false,
     otherExerciseText:document.getElementById('other-exercise-text')?document.getElementById('other-exercise-text').value:'',
     activityNote:document.getElementById('activity-note')?.value||'',
+    activityFlag:document.querySelector('#main-log .flag-grid .flag-btn.selected-teal')?.textContent||'',
+    movementBreaks:document.getElementById('tog-movement-breaks')?document.getElementById('tog-movement-breaks').classList.contains('on'):false,
     foods:foods,
     triggers:triggersLogged,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
@@ -2340,10 +2343,16 @@ SLEEP
 Average sleep: ${avgSleep||'insufficient data'} hours
 ${avgSleepBeforeMigraine?'Average sleep night before a migraine: '+avgSleepBeforeMigraine+' hours':''}
 
-NUTRITION
+NUTRITION & DAILY ACTIVITY
 Average water intake: ${avgWater||'insufficient data'} glasses/day
 Bedtime snack logged: ${bedtimeSnackDays} of ${totalDays} days (${Math.round(bedtimeSnackDays/Math.max(1,totalDays)*100)}%)
+Bedtime snack on night before a migraine: ${(()=>{const n=migraines.filter(ep=>{const prev=new Date(new Date(ep.date).getTime()-86400000).toDateString();const l=logs.find(x=>new Date(x.date).toDateString()===prev);return l&&l.bedtimeSnack;}).length;return migraines.length?n+' of '+migraines.length+' migraines':' insufficient data';})()}
 Meal with significant protein logged: ${proteinDays} of ${totalDays} days
+Most common meal gap: ${(()=>{const gaps=logs.filter(l=>l.mealGap).map(l=>l.mealGap);if(!gaps.length)return 'not consistently logged';const freq={};gaps.forEach(g=>freq[g]=(freq[g]||0)+1);return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];})()}
+Activity type on migraine days: ${(()=>{const acts=migraines.map(ep=>{const l=logs.find(x=>new Date(x.date).toDateString()===new Date(ep.date).toDateString());return l&&l.activity?l.activity:null;}).filter(Boolean);return acts.length?acts.join(', '):'not consistently logged';})()}
+Activity type on day before migraine: ${(()=>{const acts=migraines.map(ep=>{const prev=new Date(new Date(ep.date).getTime()-86400000).toDateString();const l=logs.find(x=>new Date(x.date).toDateString()===prev);return l&&l.activity?l.activity:null;}).filter(Boolean);return acts.length?acts.join(', '):'not consistently logged';})()}
+Movement/stretch breaks logged: ${logs.filter(l=>l.movementBreaks).length} of ${totalDays} days
+Movement breaks on migraine days: ${(()=>{const n=migraines.filter(ep=>{const l=logs.find(x=>new Date(x.date).toDateString()===new Date(ep.date).toDateString());return l&&l.movementBreaks;}).length;return migraines.length?n+' of '+migraines.length:' insufficient data';})()}
 
 MIGRAINE EVENTS
 Total migraines logged: ${migraines.length}
@@ -2363,10 +2372,11 @@ PRINCIPLES YOU MUST FOLLOW:
 2. Migraine is a complex, highly individual neurological condition with many possible contributing factors. No single dataset of this size can determine cause. Acknowledge this.
 3. Where your observations align with established migraine science, you may note that alignment — but frame it as "this is consistent with research on X" not "X is causing your migraines."
 4. Where the data is insufficient to say anything meaningful, say so clearly. Do not fill gaps with assumptions.
-5. Never make recommendations that contradict established evidence. Exercise, for example, has robust evidence as beneficial for migraine prevention — do not suggest stopping it based on a correlation in a short dataset.
-6. The user's personal history context is essential. Weight it heavily. A pattern that appears in 41 days of data but contradicts 30 years of lived experience should be noted as a correlation worth monitoring, not a conclusion.
-7. Your output should help the user have a better conversation with their doctor — not replace that conversation.
-8. Write in plain prose. No lists, no headers. 5-7 sentences. Objective, honest, useful.
+5. Never make recommendations that contradict established evidence. Exercise has robust evidence as beneficial for migraine prevention — do not suggest stopping it based on a short-term correlation.
+6. The user's personal history context is essential. Weight it heavily. A pattern in 41 days that contradicts 30 years of lived experience should be noted as a correlation worth monitoring, not a conclusion.
+7. Engage with ALL the variables in the data — nutrition, activity type, sleep, hydration, supplements, exercise. Do not focus only on the strongest correlation and ignore others.
+8. Your output should help the user have a better conversation with their doctor — not replace that conversation.
+9. Write in plain prose. No lists, no headers. 5-7 sentences. Objective, honest, useful.
 
 Here is the complete logged data and user context:
 
