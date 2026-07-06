@@ -2216,34 +2216,27 @@ function closeModal(){
   if(modal) modal.style.display='none';
 }
 
-function confirmUnlock(){
-  // Close the info modal and open Paystack popup
+async function confirmUnlock(){
   closeModal();
-
-  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
-  const email=profile.email||'user@lucid.app';
-  const name=profile.name||'Lucid user';
-
-  const handler=PaystackPop.setup({
-    key:'pk_test_3517acdb45f561c55ceb54dc4d9e9b13d5d02503',
-    email:email,
-    amount:14900, // amount in kobo/cents: R149 = 14900
-    currency:'ZAR',
-    ref:'lucid_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
-    metadata:{
-      custom_fields:[
-        {display_name:'Product',variable_name:'product',value:'Lucid AI analysis lifetime unlock'},
-        {display_name:'User name',variable_name:'name',value:name}
-      ]
-    },
-    onSuccess:function(response){
-      verifyAndUnlock(response.reference);
-    },
-    onCancel:function(){
-      showToast('Payment cancelled');
+  const profile=JSON.parse(localStorage.getItem("lucid-profile")||"{}");
+  const email=profile.email||"user@lucid.app";
+  const ref="lucid_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+  showToast("Connecting to payment…");
+  try{
+    const res=await fetch("/api/init-payment",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email,ref})
+    });
+    const data=await res.json();
+    if(res.ok && data.url){
+      window.location.href=data.url;
+    } else {
+      showToast("Could not start payment: "+(data.error||"unknown error"));
     }
-  });
-  handler.openIframe();
+  } catch(e){
+    showToast("Payment error: "+e.message);
+  }
 }
 
 async function verifyAndUnlock(reference){
@@ -2262,12 +2255,15 @@ async function verifyAndUnlock(reference){
       updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'20'));
       runAnalysis();
     } else {
-      showToast('Payment verification failed — contact support');
-      console.error('Verification response:',data);
+      const errMsg=data.error||data.details||JSON.stringify(data);
+      showToast('Verification failed: '+errMsg.slice(0,60));
+      const ab=document.getElementById('analysis-body');
+      if(ab) ab.textContent='Verification failed: '+errMsg+' (ref: '+reference+')';
     }
   } catch(e){
-    showToast('Could not verify payment — please try again');
-    console.error('Verification error:',e);
+    showToast('Verify error: '+e.message.slice(0,60));
+    const ab=document.getElementById('analysis-body');
+    if(ab) ab.textContent='Verify error: '+e.message+' (ref: '+reference+')';
   }
 }
 
@@ -2490,6 +2486,16 @@ if(new URLSearchParams(window.location.search).get('unlock')==='greg'){
   updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
   showToast('Analysis unlocked ✓');
 }
+
+// Paystack redirect return
+(function checkPaystackReturn(){
+  const params=new URLSearchParams(window.location.search);
+  const ref=params.get("reference")||params.get("trxref");
+  if(ref && localStorage.getItem("lucid-unlocked")!=="true"){
+    window.history.replaceState({},"",window.location.pathname);
+    verifyAndUnlock(ref);
+  }
+})();
 
 const savedCount=parseInt(localStorage.getItem('lucid-entry-count')||'0');
 updateProgress(savedCount);
