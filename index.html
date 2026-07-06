@@ -2302,14 +2302,12 @@ async function runAnalysis(){
     i=j;
   }
 
-  // Period since last analysis
+  // Period since last analysis — use stored date, not count as index
   const lastAnalysisCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
-  const recentLogs=logs.slice(lastAnalysisCount);
-  const recentMigraines=migraines.filter(e=>{
-    const d=new Date(e.date);
-    const cutoff=logs[lastAnalysisCount]?new Date(logs[lastAnalysisCount].date):new Date(0);
-    return d>=cutoff;
-  });
+  const lastAnalysisDate=localStorage.getItem('lucid-analysis-date-iso')||null;
+  const cutoffDate=lastAnalysisDate?new Date(lastAnalysisDate):null;
+  const recentLogs=cutoffDate?logs.filter(l=>new Date(l.date)>cutoffDate):logs;
+  const recentMigraines=cutoffDate?migraines.filter(e=>new Date(e.date)>cutoffDate):migraines;
   const recentSwimDays=recentLogs.filter(l=>l.swam).length;
 
   // Recent streak calc
@@ -2374,18 +2372,19 @@ Swim days in this period: ${recentSwimDays}
 Longest migraine-free streak in this period: ${recentStreak} days
 ${recentMigraines.length>0?'Migraine dates in this period: '+recentMigraines.map(e=>e.date).join(', '):'No migraines in this period'}`;
 
-  const prompt=`You are a pattern observation tool for a migraine tracking app. Your role is to help the user understand what their logged data shows.
+  const prompt=`You are a pattern observation tool for a migraine tracking app. Report what the logged data shows. Do not interpret beyond what the numbers support.
 
-PRINCIPLES:
-1. Observe, do not conclude. Report what the numbers show. Correlation is not causation.
-2. Migraine is a complex, individual neurological condition. No short dataset can determine cause.
-3. Where observations align with established migraine science, note that alignment — but frame it as "consistent with research on X" not "X is causing your migraines."
-4. Where data is insufficient, say so clearly. Do not fill gaps with assumptions.
+RULES:
+1. Observe only. Correlation is not causation. Never state a cause.
+2. Migraine is complex and individual. No short dataset determines cause.
+3. Where observations align with established migraine science, note that alignment with "consistent with research on X" — not "X is causing your migraines."
+4. Where data is insufficient, say so. Do not fill gaps.
 5. Never contradict established evidence. Exercise has robust evidence as beneficial for migraine prevention.
-6. Weight the user's personal history heavily. A pattern in recent data that contradicts 30 years of lived experience should be flagged as worth monitoring, not presented as a finding.
-7. Engage with ALL variables — nutrition, activity, sleep, hydration, supplements, exercise, temporal patterns.
-8. Give specific attention to the SINCE LAST ANALYSIS period. Note what changed compared to the full dataset. Highlight any notable streaks, clusters, or shifts.
-9. Plain prose only, no lists, no headers, 6-8 sentences maximum.
+6. Weight the user's personal history. Patterns in short data that contradict decades of lived experience should be flagged as worth monitoring, not presented as findings.
+7. Engage all variables: nutrition, activity, sleep, hydration, supplements, exercise, temporal patterns.
+8. The SINCE LAST ANALYSIS section shows what is new. Compare it to the full dataset. If the recent period shows a notably different frequency, streak, or cluster pattern — state that explicitly. If the longest migraine-free streak is above 7 days, mention it specifically.
+9. Do not shape findings to match what a user might want to hear. If the data shows no improvement, say so. If it shows no clear signal on any variable, say so.
+10. Plain prose only. No lists, no headers. 6-8 sentences.
 
 DATA:
 ${dataSummary}`;
@@ -2404,6 +2403,12 @@ ${dataSummary}`;
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
     if(ab) ab.style.display='none';
+    localStorage.setItem('lucid-analysis-result',text);
+    localStorage.setItem('lucid-analysis-date',new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}));
+    localStorage.setItem('lucid-analysis-date-iso',new Date().toISOString());
+    localStorage.setItem('lucid-analysis-entry-count',localStorage.getItem('lucid-entry-count')||'0');
+    const rap=document.getElementById('reanalysis-prompt');
+    if(rap) rap.style.display='none';
   } catch(e){
     if(ar) ar.style.display='none';
     if(at) at.textContent='Analysis error';
