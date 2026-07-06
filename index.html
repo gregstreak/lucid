@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Lucid</title>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <style>
 :root {
   --teal-light: #F0F8F6;
@@ -913,7 +914,7 @@ body {
     </div>
     <button class="btn-dawn" onclick="confirmUnlock()" style="margin-bottom:10px">Unlock now — R149</button>
     <button class="btn-secondary" onclick="closeModal()" style="margin-bottom:0">Not now</button>
-    <div style="font-size:11px;color:var(--text-light);text-align:center;margin-top:10px;line-height:1.5">Payment processing coming soon. Tap Unlock now to activate in the current preview.</div>
+    <div style="font-size:11px;color:var(--text-light);text-align:center;margin-top:10px;line-height:1.5">Secured by Paystack. Card details are never stored by Lucid.</div>
   </div>
 </div>
 
@@ -2186,6 +2187,7 @@ function updateProgress(count){
 }
 
 function handleUnlock(){
+  // Show the modal so the user sees the pricing detail before the Paystack popup
   const modal=document.getElementById('unlock-modal');
   if(modal) modal.style.display='flex';
 }
@@ -2196,17 +2198,64 @@ function handleReportUnlock(){
   handleUnlock();
 }
 
-function confirmUnlock(){
-  document.getElementById('unlock-modal').style.display='none';
-  localStorage.setItem('lucid-unlocked','true');
-  showToast('Analysis unlocked ✓');
-  runAnalysis();
-  updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'20'));
-}
-
 function closeModal(){
   const modal=document.getElementById('unlock-modal');
   if(modal) modal.style.display='none';
+}
+
+function confirmUnlock(){
+  // Close the info modal and open Paystack popup
+  closeModal();
+
+  const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
+  const email=profile.email||'user@lucid.app';
+  const name=profile.name||'Lucid user';
+
+  const handler=PaystackPop.setup({
+    key:'pk_test_3517acdb45f561c55ceb54dc4d9e9b13d5d02503',
+    email:email,
+    amount:14900, // amount in kobo/cents: R149 = 14900
+    currency:'ZAR',
+    ref:'lucid_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+    metadata:{
+      custom_fields:[
+        {display_name:'Product',variable_name:'product',value:'Lucid AI analysis lifetime unlock'},
+        {display_name:'User name',variable_name:'name',value:name}
+      ]
+    },
+    onSuccess:function(response){
+      verifyAndUnlock(response.reference);
+    },
+    onCancel:function(){
+      showToast('Payment cancelled');
+    }
+  });
+  handler.openIframe();
+}
+
+async function verifyAndUnlock(reference){
+  showToast('Verifying payment…');
+  try{
+    const res=await fetch('/api/verify-payment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({reference})
+    });
+    const data=await res.json();
+    if(res.ok && data.verified){
+      localStorage.setItem('lucid-unlocked','true');
+      localStorage.setItem('lucid-unlock-ref',reference);
+      showToast('Analysis unlocked ✓');
+      updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'20'));
+      runAnalysis();
+    } else {
+      showToast('Payment verification failed — contact support');
+      console.error('Verification response:',data);
+    }
+  } catch(e){
+    showToast('Could not verify payment — please try again');
+    console.error('Verification error:',e);
+  }
 }
 
 async function runAnalysis(){
