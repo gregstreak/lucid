@@ -2253,6 +2253,7 @@ async function verifyAndUnlock(reference){
       localStorage.setItem('lucid-unlock-ref',reference);
       showToast('Analysis unlocked ✓');
       updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'20'));
+      launchApp('dash');
       runAnalysis();
     } else {
       const errMsg=data.error||data.details||JSON.stringify(data);
