@@ -2242,7 +2242,7 @@ async function verifyAndUnlock(reference){
       body:JSON.stringify({reference})
     });
     const data=await res.json();
-    if(res.ok && data.verified){
+    if(res.ok && data.success){
       localStorage.setItem('lucid-unlocked','true');
       localStorage.setItem('lucid-unlock-ref',reference);
       showToast('Analysis unlocked ✓');
