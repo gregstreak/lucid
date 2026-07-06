@@ -570,7 +570,6 @@ body {
         <button class="flag-btn" onclick="selectActivity(this)">Rest day</button>
       </div>
       <input class="input-field" id="activity-note" type="text" placeholder="Anything else worth noting about today…">
-      <div class="row" style="border-bottom:none;padding-bottom:0;margin-top:8px"><div class="row-left"><div class="row-label">Took regular movement / stretch breaks</div></div><button class="toggle" id="tog-movement-breaks" onclick="this.classList.toggle('on')"></button></div>
     </div>
   </div>
 
@@ -782,6 +781,7 @@ body {
   <div id="past-entries-list"></div>
 
   <div class="section-label">Emerging pattern</div>
+  <div id="reanalysis-prompt" style="display:none"></div>
   <div class="analysis-card" id="analysis-card">
     <div class="analysis-title" id="analysis-title">Pattern analysis</div>
     <div class="analysis-body" id="analysis-body">Not enough data yet. Keep logging daily — the analysis reads across your entries to find correlations between your migraines and your sleep, exercise, supplements, hydration, and nutrition. The signal emerges from consistency over time, not from any single entry.</div>
@@ -836,17 +836,14 @@ body {
     <div class="row"><div class="row-left"><div class="row-label">Biological sex</div></div><select class="select-field" id="s-sex" style="width:140px"><option>Male</option><option>Female</option><option>Prefer not to say</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Years suffering</div></div><select class="select-field" id="s-years" style="width:140px"><option>Under 1</option><option>1–3</option><option>3–5</option><option>5–10</option><option>10–20</option><option>20+ years</option></select></div>
     <div class="row"><div class="row-left"><div class="row-label">Avg migraines / month</div></div><select class="select-field" id="s-freq" style="width:140px"><option>1–2</option><option>3–5</option><option>6–10</option><option>10+</option></select></div>
-  </div>
-
-  <div class="section-label">Your migraine history</div>
-  <div style="font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:.75rem">This is the most important section for the pattern analysis. The more context you give, the more specific and useful the analysis will be. The app can only see what you log — your history gives it the context it cannot infer.</div>
-  <div class="card">
-    <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;line-height:1.6">Consider including: how long you have suffered, what you have already tried (and whether it helped), whether your migraines follow any pattern (hormonal, seasonal, stress-related, weather), what a typical migraine looks and feels like for you, any relevant medical history, and anything else that might be relevant to interpreting your logged data.</div>
-    <textarea class="textarea-field" id="s-history" rows="6" placeholder="Write your migraine history here. There are no wrong answers — the more honest and specific you are, the more useful the analysis will be."></textarea>
+    <div class="row" style="border-bottom:none;padding-bottom:0;flex-direction:column;align-items:flex-start;gap:6px">
+      <div class="row-label">Personal history <span style="font-size:11px;color:var(--text-light);font-weight:400">— anything the analysis should know</span></div>
+      <textarea class="textarea-field" id="s-history" rows="3" placeholder="e.g. I had migraines for 20 years before I started swimming. I have tried X previously. My migraines tend to cluster around..."></textarea>
+    </div>
   </div>
 
   <div class="section-label">Your supplements</div>
-  <div class="section-note">These appear as your daily checklist. Include the reason you're taking each one — this helps the analysis understand your protocol in context.</div>
+  <div class="section-note">These appear as your daily checklist</div>
   <div class="card" id="settings-supp-list"></div>
   <div class="card" style="margin-top:0">
     <div style="margin-bottom:8px"><div class="food-label">Name</div><input class="input-field" id="s-supp-name" type="text" placeholder="e.g. Riboflavin B2"></div>
@@ -854,7 +851,6 @@ body {
       <div style="flex:1"><div class="food-label">Dose</div><input class="input-field" id="s-supp-dose" type="text" placeholder="e.g. 400mg"></div>
       <div style="flex:1"><div class="food-label">When</div><select class="select-field" id="s-supp-timing"><option>Morning</option><option>With meal</option><option>Afternoon</option><option selected>Night</option><option>Post-exercise</option></select></div>
     </div>
-    <div style="margin-bottom:8px"><div class="food-label">Why / since when (optional)</div><input class="input-field" id="s-supp-reason" type="text" placeholder="e.g. recommended by neurologist, started Jan 2026"></div>
     <button class="btn-secondary" onclick="addSettingsSupp()" style="margin:0">+ Add supplement</button>
   </div>
 
@@ -1307,24 +1303,6 @@ function renderReport(){
   const nightOnset=onsetTimes.filter(h=>h>=0&&h<=5).length;
   const onsetPattern=onsetTimes.length?(nightOnset/onsetTimes.length*100).toFixed(0)+'% between midnight and 5am':'—';
 
-  // Post-swim correlation
-  const migrainePostSwim=migraines.filter(ep=>{
-    const epDate=new Date(ep.date).toDateString();
-    const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
-    return logs.some(l=>l.swam&&(new Date(l.date).toDateString()===epDate||new Date(l.date).toDateString()===prevDate));
-  }).length;
-
-  // Bedtime snack
-  const bedtimeSnackCount=logs.filter(l=>l.bedtimeSnack).length;
-
-  // Sleep before migraine
-  const sleepBeforeMigraineArr=migraines.map(ep=>{
-    const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
-    const log=logs.find(l=>new Date(l.date).toDateString()===prevDate);
-    return log?log.sleep:null;
-  }).filter(s=>s!==null);
-  const avgSleepBefore=sleepBeforeMigraineArr.length?(sleepBeforeMigraineArr.reduce((a,b)=>a+b,0)/sleepBeforeMigraineArr.length).toFixed(1):null;
-
   const pending=`<span style="color:var(--text-light);font-style:italic">Pending — unlocks with AI analysis</span>`;
   const notEnough=`<span style="color:var(--text-light);font-style:italic">Not enough data yet</span>`;
 
@@ -1395,19 +1373,12 @@ function renderReport(){
     <div class="card">
       <div class="report-section">
         <div class="report-section-title">Pattern correlations</div>
-        ${unlocked ? `
-        <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${migraines.length?migrainePostSwim+' of '+migraines.length+' migraines within 24hrs of a swim day ('+Math.round(migrainePostSwim/Math.max(1,migraines.length)*100)+'%)':'Insufficient data'}</span></div>
-        <div class="report-row"><span class="report-key">Early morning onset (midnight–6am)</span><span class="report-val">${onsetTimes.length?nightOnset+' of '+onsetTimes.length+' migraines ('+Math.round(nightOnset/Math.max(1,onsetTimes.length)*100)+'%)':'Insufficient data'}</span></div>
-        <div class="report-row"><span class="report-key">Bedtime snack compliance</span><span class="report-val">${totalLogs?bedtimeSnackCount+' of '+totalLogs+' logged days ('+Math.round(bedtimeSnackCount/Math.max(1,totalLogs)*100)+'%)':'Insufficient data'}</span></div>
-        <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${avgSleepBefore?'Avg '+avgSleepBefore+'h sleep night before a migraine':'Insufficient data'}</span></div>
-        ` : `
         <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${pending}</span></div>
         <div class="report-row"><span class="report-key">Bedtime snack correlation</span><span class="report-val">${pending}</span></div>
         <div class="report-row"><span class="report-key">Barometric pressure correlation</span><span class="report-val">${pending}</span></div>
         <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${pending}</span></div>
-        `}
       </div>
-      ${!unlocked?`<div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">Correlations calculate at 20 entries and unlock with AI analysis.</div>`:''}
+      <div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">Correlations calculate at 20 entries and unlock with AI analysis.</div>
     </div>
 
     ${unlocked
@@ -1569,14 +1540,12 @@ function addSettingsSupp(){
   const n=document.getElementById('s-supp-name').value.trim();
   const d=document.getElementById('s-supp-dose').value.trim();
   const t=document.getElementById('s-supp-timing').value;
-  const r=document.getElementById('s-supp-reason')?.value.trim()||'';
   if(!n) return;
   const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
-  supps.push({name:n,dose:d+(d?' — ':'')+t,reason:r});
+  supps.push({name:n,dose:d+(d?' — ':'')+t});
   localStorage.setItem('lucid-supps',JSON.stringify(supps));
   document.getElementById('s-supp-name').value='';
   document.getElementById('s-supp-dose').value='';
-  if(document.getElementById('s-supp-reason')) document.getElementById('s-supp-reason').value='';
   populateSettings();
 }
 
@@ -1695,8 +1664,6 @@ function saveLog(){
     otherExercise:document.getElementById('other-tog')?document.getElementById('other-tog').classList.contains('on'):false,
     otherExerciseText:document.getElementById('other-exercise-text')?document.getElementById('other-exercise-text').value:'',
     activityNote:document.getElementById('activity-note')?.value||'',
-    activityFlag:document.querySelector('#main-log .flag-grid .flag-btn.selected-teal')?.textContent||'',
-    movementBreaks:document.getElementById('tog-movement-breaks')?document.getElementById('tog-movement-breaks').classList.contains('on'):false,
     foods:foods,
     triggers:triggersLogged,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
@@ -2209,6 +2176,22 @@ function updateProgress(count){
     if(pdfNote) pdfNote.style.display='none';
     const pdfBtn=document.getElementById('pdf-btn');
     if(pdfBtn) pdfBtn.onclick=()=>showToast('PDF export coming in next version');
+    // Check if a new analysis is due (every 20 entries since last run)
+    const lastAnalysisCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
+    const entriesSinceLast=count-lastAnalysisCount;
+    const reanalysisPrompt=document.getElementById('reanalysis-prompt');
+    if(reanalysisPrompt){
+      if(entriesSinceLast>=20){
+        reanalysisPrompt.style.display='block';
+        reanalysisPrompt.innerHTML=`<div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem">
+          <div style="font-size:13px;font-weight:500;color:var(--dawn-dark);margin-bottom:6px">New analysis ready</div>
+          <div style="font-size:13px;color:#8A4A20;line-height:1.6;margin-bottom:10px">You have logged ${entriesSinceLast} entries since your last analysis. Run a fresh analysis to see if new patterns have emerged.</div>
+          <button onclick="runAnalysis()" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:var(--dawn-dark);color:white;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans)">Run new analysis</button>
+        </div>`;
+      } else {
+        reanalysisPrompt.style.display='none';
+      }
+    }
   } else {
     const remaining=target-count;
     if(pn) pn.textContent=remaining+' more '+(remaining===1?'day':'days')+' until your first pattern analysis';
@@ -2343,16 +2326,10 @@ SLEEP
 Average sleep: ${avgSleep||'insufficient data'} hours
 ${avgSleepBeforeMigraine?'Average sleep night before a migraine: '+avgSleepBeforeMigraine+' hours':''}
 
-NUTRITION & DAILY ACTIVITY
+NUTRITION
 Average water intake: ${avgWater||'insufficient data'} glasses/day
 Bedtime snack logged: ${bedtimeSnackDays} of ${totalDays} days (${Math.round(bedtimeSnackDays/Math.max(1,totalDays)*100)}%)
-Bedtime snack on night before a migraine: ${(()=>{const n=migraines.filter(ep=>{const prev=new Date(new Date(ep.date).getTime()-86400000).toDateString();const l=logs.find(x=>new Date(x.date).toDateString()===prev);return l&&l.bedtimeSnack;}).length;return migraines.length?n+' of '+migraines.length+' migraines':' insufficient data';})()}
 Meal with significant protein logged: ${proteinDays} of ${totalDays} days
-Most common meal gap: ${(()=>{const gaps=logs.filter(l=>l.mealGap).map(l=>l.mealGap);if(!gaps.length)return 'not consistently logged';const freq={};gaps.forEach(g=>freq[g]=(freq[g]||0)+1);return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0];})()}
-Activity type on migraine days: ${(()=>{const acts=migraines.map(ep=>{const l=logs.find(x=>new Date(x.date).toDateString()===new Date(ep.date).toDateString());return l&&l.activity?l.activity:null;}).filter(Boolean);return acts.length?acts.join(', '):'not consistently logged';})()}
-Activity type on day before migraine: ${(()=>{const acts=migraines.map(ep=>{const prev=new Date(new Date(ep.date).getTime()-86400000).toDateString();const l=logs.find(x=>new Date(x.date).toDateString()===prev);return l&&l.activity?l.activity:null;}).filter(Boolean);return acts.length?acts.join(', '):'not consistently logged';})()}
-Movement/stretch breaks logged: ${logs.filter(l=>l.movementBreaks).length} of ${totalDays} days
-Movement breaks on migraine days: ${(()=>{const n=migraines.filter(ep=>{const l=logs.find(x=>new Date(x.date).toDateString()===new Date(ep.date).toDateString());return l&&l.movementBreaks;}).length;return migraines.length?n+' of '+migraines.length:' insufficient data';})()}
 
 MIGRAINE EVENTS
 Total migraines logged: ${migraines.length}
@@ -2363,29 +2340,18 @@ Migraines within 24hrs of a swim day: ${migrainePostSwim} of ${migraines.length}
 Episodes requiring escalation to second medication: ${escalations}
 Medications used: ${[...new Set(allMeds)].join(', ')||'none logged'}`;
 
-  const suppWithReasons=supps.map(s=>s.name+(s.dose?' — '+s.dose:'')+(s.reason?' ('+s.reason+')':'')).join('\n');
+  const prompt=`You are a pattern analysis tool for a migraine tracking app. Your role is to report what the logged data actually shows — nothing more.
 
-  const prompt=`You are a pattern observation tool for a migraine tracking app. Your role is to help the user understand what their own logged data shows — not to diagnose, prescribe, or draw conclusions that the data cannot support.
+Rules:
+- Only use what is in the data summary below
+- Make no assumptions about the user beyond what is stated
+- Do not suggest causes that are not supported by the numbers
+- If data is insufficient to conclude anything, say so clearly
+- The user specifically wants to know whether their prevention supplements are making a measurable difference — address this directly using the before/after data if available, or state that there is not yet enough data
+- Plain prose only, no lists, no headers, 4-6 sentences maximum
 
-PRINCIPLES YOU MUST FOLLOW:
-1. Observe, do not conclude. Report what the numbers show. Do not interpret causation from correlation.
-2. Migraine is a complex, highly individual neurological condition with many possible contributing factors. No single dataset of this size can determine cause. Acknowledge this.
-3. Where your observations align with established migraine science, you may note that alignment — but frame it as "this is consistent with research on X" not "X is causing your migraines."
-4. Where the data is insufficient to say anything meaningful, say so clearly. Do not fill gaps with assumptions.
-5. Never make recommendations that contradict established evidence. Exercise has robust evidence as beneficial for migraine prevention — do not suggest stopping it based on a short-term correlation.
-6. The user's personal history context is essential. Weight it heavily. A pattern in 41 days that contradicts 30 years of lived experience should be noted as a correlation worth monitoring, not a conclusion.
-7. Engage with ALL the variables in the data — nutrition, activity type, sleep, hydration, supplements, exercise. Do not focus only on the strongest correlation and ignore others.
-8. Your output should help the user have a better conversation with their doctor — not replace that conversation.
-9. Write in plain prose. No lists, no headers. 5-7 sentences. Objective, honest, useful.
-
-Here is the complete logged data and user context:
-
-${dataSummary}
-
-Supplements with context:
-${suppWithReasons||'None provided'}
-
-Remember: observe what is in the data, acknowledge what is uncertain, note where findings align with established migraine science, and flag anything worth discussing with a healthcare professional. Do not prescribe. Do not conclude causation. Do not make declarative statements about what the user should stop or start doing.`;
+DATA:
+${dataSummary}`;
 
   try{
     const response=await fetch('/api/analyse',{
@@ -2401,9 +2367,13 @@ Remember: observe what is in the data, acknowledge what is uncertain, note where
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
     if(ab) ab.style.display='none';
-    // Save result to local storage so Report can display it
+    // Save result and entry count for report and re-analysis tracking
     localStorage.setItem('lucid-analysis-result',text);
     localStorage.setItem('lucid-analysis-date',new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}));
+    localStorage.setItem('lucid-analysis-entry-count',localStorage.getItem('lucid-entry-count')||'0');
+    // Hide re-analysis prompt since we just ran it
+    const rap=document.getElementById('reanalysis-prompt');
+    if(rap) rap.style.display='none';
   } catch(e){
     if(ar) ar.style.display='none';
     if(at) at.textContent='Analysis error';
