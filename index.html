@@ -781,7 +781,6 @@ body {
   <div id="past-entries-list"></div>
 
   <div class="section-label">Emerging pattern</div>
-  <div id="reanalysis-prompt" style="display:none"></div>
   <div class="analysis-card" id="analysis-card">
     <div class="analysis-title" id="analysis-title">Pattern analysis</div>
     <div class="analysis-body" id="analysis-body">Not enough data yet. Keep logging daily — the analysis reads across your entries to find correlations between your migraines and your sleep, exercise, supplements, hydration, and nutrition. The signal emerges from consistency over time, not from any single entry.</div>
@@ -1384,8 +1383,7 @@ function renderReport(){
     ${unlocked
       ? `<div class="analysis-card">
           <div class="analysis-title">Pattern summary for clinical review</div>
-          <div class="analysis-body" id="report-pattern-summary">${localStorage.getItem('lucid-analysis-result')||'Run the pattern analysis from the Dashboard to populate this section.'}</div>
-          ${localStorage.getItem('lucid-analysis-date')?`<div style="font-size:11px;color:var(--text-light);margin-top:8px">Last run: ${localStorage.getItem('lucid-analysis-date')}</div>`:''}
+          <div class="analysis-body" id="report-pattern-summary">Your AI analysis findings will appear here.</div>
         </div>`
       : `<div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem">
           <div style="font-size:13px;font-weight:500;color:var(--dawn-dark);margin-bottom:6px">Pattern summary</div>
@@ -2176,22 +2174,6 @@ function updateProgress(count){
     if(pdfNote) pdfNote.style.display='none';
     const pdfBtn=document.getElementById('pdf-btn');
     if(pdfBtn) pdfBtn.onclick=()=>showToast('PDF export coming in next version');
-    // Check if a new analysis is due (every 20 entries since last run)
-    const lastAnalysisCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
-    const entriesSinceLast=count-lastAnalysisCount;
-    const reanalysisPrompt=document.getElementById('reanalysis-prompt');
-    if(reanalysisPrompt){
-      if(entriesSinceLast>=20){
-        reanalysisPrompt.style.display='block';
-        reanalysisPrompt.innerHTML=`<div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem">
-          <div style="font-size:13px;font-weight:500;color:var(--dawn-dark);margin-bottom:6px">New analysis ready</div>
-          <div style="font-size:13px;color:#8A4A20;line-height:1.6;margin-bottom:10px">You have logged ${entriesSinceLast} entries since your last analysis. Run a fresh analysis to see if new patterns have emerged.</div>
-          <button onclick="runAnalysis()" style="width:100%;padding:10px;border-radius:var(--radius-sm);border:none;background:var(--dawn-dark);color:white;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans)">Run new analysis</button>
-        </div>`;
-      } else {
-        reanalysisPrompt.style.display='none';
-      }
-    }
   } else {
     const remaining=target-count;
     if(pn) pn.textContent=remaining+' more '+(remaining===1?'day':'days')+' until your first pattern analysis';
@@ -2297,8 +2279,51 @@ async function runAnalysis(){
   episodes.forEach(ep=>{(ep.steps||[]).forEach(s=>{if(s.medication)allMeds.push(s.medication);});});
   const escalations=episodes.filter(ep=>(ep.steps||[]).length>1).length;
 
-  const dataSummary=`LOGGED DATA SUMMARY
-Days logged: ${totalDays}
+  // Longest migraine-free streak
+  let longestStreak=0,currentStreak=0;
+  const migraineDateSet=new Set(migraines.map(e=>new Date(e.date).toDateString()));
+  logs.forEach(l=>{
+    if(!migraineDateSet.has(new Date(l.date).toDateString())){
+      currentStreak++;
+      if(currentStreak>longestStreak) longestStreak=currentStreak;
+    } else {
+      currentStreak=0;
+    }
+  });
+
+  // Migraine clusters (2+ within 3 days)
+  const sortedMigraines=[...migraines].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const clusters=[];
+  let i=0;
+  while(i<sortedMigraines.length){
+    let j=i+1;
+    while(j<sortedMigraines.length&&(new Date(sortedMigraines[j].date)-new Date(sortedMigraines[i].date))/(1000*60*60*24)<=3) j++;
+    if(j-i>=2) clusters.push(sortedMigraines.slice(i,j).map(e=>e.date));
+    i=j;
+  }
+
+  // Period since last analysis
+  const lastAnalysisCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
+  const recentLogs=logs.slice(lastAnalysisCount);
+  const recentMigraines=migraines.filter(e=>{
+    const d=new Date(e.date);
+    const cutoff=logs[lastAnalysisCount]?new Date(logs[lastAnalysisCount].date):new Date(0);
+    return d>=cutoff;
+  });
+  const recentSwimDays=recentLogs.filter(l=>l.swam).length;
+
+  // Recent streak calc
+  let recentStreak=0,recentCurrentStreak=0;
+  recentLogs.forEach(l=>{
+    if(!migraineDateSet.has(new Date(l.date).toDateString())){
+      recentCurrentStreak++;
+      if(recentCurrentStreak>recentStreak) recentStreak=recentCurrentStreak;
+    } else {
+      recentCurrentStreak=0;
+    }
+  });
+
+  const dataSummary=`FULL DATASET SUMMARY (all ${totalDays} logged days)
 Date range: ${logs.length?logs[0].date+' to '+logs[logs.length-1].date:'unknown'}
 
 USER PROFILE (self-reported)
@@ -2331,24 +2356,36 @@ Average water intake: ${avgWater||'insufficient data'} glasses/day
 Bedtime snack logged: ${bedtimeSnackDays} of ${totalDays} days (${Math.round(bedtimeSnackDays/Math.max(1,totalDays)*100)}%)
 Meal with significant protein logged: ${proteinDays} of ${totalDays} days
 
-MIGRAINE EVENTS
+MIGRAINE EVENTS (full period)
 Total migraines logged: ${migraines.length}
 Near misses logged: ${nearMisses.length}
 Average severity: ${avgSeverity||'insufficient data'}/10
 ${onsetHours.length?'Onset times: '+nightOnset+' of '+onsetHours.length+' between midnight and 6am':'Onset times: not consistently logged'}
 Migraines within 24hrs of a swim day: ${migrainePostSwim} of ${migraines.length}
 Episodes requiring escalation to second medication: ${escalations}
-Medications used: ${[...new Set(allMeds)].join(', ')||'none logged'}`;
+Medications used: ${[...new Set(allMeds)].join(', ')||'none logged'}
+Longest migraine-free streak (logged days): ${longestStreak} days
+Migraine clusters (2+ within 3 days): ${clusters.length>0?clusters.length+' cluster(s) — '+clusters.map(c=>c.join(' and ')).join('; '):'none identified'}
 
-  const prompt=`You are a pattern analysis tool for a migraine tracking app. Your role is to report what the logged data actually shows — nothing more.
+SINCE LAST ANALYSIS (most recent ${recentLogs.length} entries)
+Days logged in this period: ${recentLogs.length}
+Migraines in this period: ${recentMigraines.length}
+Swim days in this period: ${recentSwimDays}
+Longest migraine-free streak in this period: ${recentStreak} days
+${recentMigraines.length>0?'Migraine dates in this period: '+recentMigraines.map(e=>e.date).join(', '):'No migraines in this period'}`;
 
-Rules:
-- Only use what is in the data summary below
-- Make no assumptions about the user beyond what is stated
-- Do not suggest causes that are not supported by the numbers
-- If data is insufficient to conclude anything, say so clearly
-- The user specifically wants to know whether their prevention supplements are making a measurable difference — address this directly using the before/after data if available, or state that there is not yet enough data
-- Plain prose only, no lists, no headers, 4-6 sentences maximum
+  const prompt=`You are a pattern observation tool for a migraine tracking app. Your role is to help the user understand what their logged data shows.
+
+PRINCIPLES:
+1. Observe, do not conclude. Report what the numbers show. Correlation is not causation.
+2. Migraine is a complex, individual neurological condition. No short dataset can determine cause.
+3. Where observations align with established migraine science, note that alignment — but frame it as "consistent with research on X" not "X is causing your migraines."
+4. Where data is insufficient, say so clearly. Do not fill gaps with assumptions.
+5. Never contradict established evidence. Exercise has robust evidence as beneficial for migraine prevention.
+6. Weight the user's personal history heavily. A pattern in recent data that contradicts 30 years of lived experience should be flagged as worth monitoring, not presented as a finding.
+7. Engage with ALL variables — nutrition, activity, sleep, hydration, supplements, exercise, temporal patterns.
+8. Give specific attention to the SINCE LAST ANALYSIS period. Note what changed compared to the full dataset. Highlight any notable streaks, clusters, or shifts.
+9. Plain prose only, no lists, no headers, 6-8 sentences maximum.
 
 DATA:
 ${dataSummary}`;
@@ -2367,13 +2404,6 @@ ${dataSummary}`;
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
     if(ab) ab.style.display='none';
-    // Save result and entry count for report and re-analysis tracking
-    localStorage.setItem('lucid-analysis-result',text);
-    localStorage.setItem('lucid-analysis-date',new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}));
-    localStorage.setItem('lucid-analysis-entry-count',localStorage.getItem('lucid-entry-count')||'0');
-    // Hide re-analysis prompt since we just ran it
-    const rap=document.getElementById('reanalysis-prompt');
-    if(rap) rap.style.display='none';
   } catch(e){
     if(ar) ar.style.display='none';
     if(at) at.textContent='Analysis error';
