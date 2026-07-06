@@ -888,8 +888,9 @@ body {
   </div>
 
   <button class="btn-primary" onclick="saveSettings()">Save settings</button>
-  <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
+  <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
     <button onclick="devUnlock()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Restore analysis access</button>
+    <button onclick="resetUnlockForTesting()" style="padding:8px 16px;border:1px solid #F0997B;background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--coral);cursor:pointer;font-family:var(--font-sans)">Reset unlock (test only)</button>
   </div>
 </div>
 <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center">
@@ -1555,6 +1556,16 @@ function removeSettingsSupp(idx){
   populateSettings();
 }
 
+
+function resetUnlockForTesting(){
+  localStorage.removeItem("lucid-unlocked");
+  localStorage.removeItem("lucid-unlock-ref");
+  localStorage.removeItem("lucid-analysis-result");
+  localStorage.removeItem("lucid-analysis-date");
+  localStorage.removeItem("lucid-analysis-date-iso");
+  localStorage.removeItem("lucid-analysis-entry-count");
+  showToast("Unlock reset — go to Dashboard to test payment");
+}
 function devUnlock(){
   localStorage.setItem('lucid-unlocked','true');
   const count=parseInt(localStorage.getItem('lucid-entry-count')||'0');
