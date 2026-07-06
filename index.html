@@ -1558,13 +1558,15 @@ function removeSettingsSupp(idx){
 
 
 function resetUnlockForTesting(){
-  localStorage.removeItem("lucid-unlocked");
-  localStorage.removeItem("lucid-unlock-ref");
-  localStorage.removeItem("lucid-analysis-result");
-  localStorage.removeItem("lucid-analysis-date");
-  localStorage.removeItem("lucid-analysis-date-iso");
-  localStorage.removeItem("lucid-analysis-entry-count");
-  showToast("Unlock reset — go to Dashboard to test payment");
+  localStorage.removeItem('lucid-unlocked');
+  localStorage.removeItem('lucid-unlock-ref');
+  localStorage.removeItem('lucid-analysis-result');
+  localStorage.removeItem('lucid-analysis-date');
+  localStorage.removeItem('lucid-analysis-date-iso');
+  localStorage.removeItem('lucid-analysis-entry-count');
+  const count=parseInt(localStorage.getItem('lucid-entry-count')||'0');
+  updateProgress(count);
+  showToast('Unlock reset — go to Dashboard to test payment');
 }
 function devUnlock(){
   localStorage.setItem('lucid-unlocked','true');
