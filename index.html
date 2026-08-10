@@ -785,7 +785,7 @@ body {
   <div class="analysis-card" id="analysis-card">
     <div class="analysis-title" id="analysis-title">Pattern analysis</div>
     <div class="analysis-body" id="analysis-body">Not enough data yet. Keep logging daily — the analysis reads across your entries to find correlations between your migraines and your sleep, exercise, supplements, hydration, and nutrition. The signal emerges from consistency over time, not from any single entry.</div>
-    <div class="analysis-meta" id="analysis-meta">Analysis runs at 20 entries.</div>
+    <div class="analysis-meta" id="analysis-meta">Analysis runs every 20 entries.</div>
     <div id="analysis-unlock-cta" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #E8C4A4">
       <button style="width:100%;padding:11px;border-radius:var(--radius-sm);border:none;background:var(--dawn-dark);color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--font-sans)" onclick="handleUnlock()">Unlock full analysis — R149 once</button>
     </div>
@@ -1687,6 +1687,15 @@ function saveLog(){
     const newCount=entries+1;
     localStorage.setItem('lucid-entry-count',newCount);
     updateProgress(newCount);
+    // Auto re-run analysis every 20 new entries if unlocked
+    const unlocked=localStorage.getItem('lucid-unlocked')==='true';
+    if(unlocked){
+      const lastCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
+      if(newCount-lastCount>=20){
+        showToast('New data detected — running updated analysis…');
+        setTimeout(()=>runAnalysis(),1000);
+      }
+    }
   }
   checkExistingLog();
   renderPastEntries();
@@ -2194,7 +2203,7 @@ function updateProgress(count){
     if(ab) ab.textContent=count===0
       ?'No entries yet. Start logging daily to build your dataset. The analysis reads across your sleep, exercise, supplements, hydration, and nutrition to find what actually precedes your migraines.'
       :'Building your dataset — '+count+' of 20 entries logged. Keep going. The analysis runs at 20 entries and correlates your migraines against everything you have logged.';
-    if(am) am.textContent='Analysis runs at 20 entries.';
+    if(am) am.textContent='Analysis runs every 20 entries.';
   }
 }
 
