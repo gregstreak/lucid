@@ -525,6 +525,20 @@ body {
     <div class="row"><div class="row-left"><div class="row-label">Woke before 5am</div></div><button class="toggle" id="tog-woke-before" onclick="this.classList.toggle('on')"></button></div>
   </div>
 
+
+  <div class="section-label">Morning state</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">How did you wake?</div></div>
+      <select class="select-field" id="waking-mood" style="width:120px">
+        <option value="">—</option>
+        <option value="calm">Calm</option>
+        <option value="neutral">Neutral</option>
+        <option value="anxious">Anxious</option>
+      </select>
+    </div>
+    <div class="row"><div class="row-left"><div class="row-label">Checked for symptoms on waking</div></div><button class="toggle" id="tog-body-scan" onclick="this.classList.toggle('on')"></button></div>
+    <div class="counter-row"><div class="row-left"><div class="row-label">Yesterday's stress level</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustStress(-1)">−</button><div class="counter-val" id="stress-val">—</div><button class="counter-btn" onclick="adjustStress(1)">+</button></div></div>
+  </div>
   <div class="section-label">Hydration</div>
   <div class="section-note">Log what you actually drank today</div>
   <div class="card">
@@ -928,6 +942,14 @@ function adjustCounter(k,d){
   const[mn,mx]=CL[k];
   C[k]=Math.min(mx,Math.max(mn,+(C[k]+d).toFixed(1)));
   document.getElementById(k+'-val').textContent=C[k];
+}
+
+let stressVal = null;
+function adjustStress(d){
+  if(stressVal===null) stressVal=3;
+  stressVal=Math.min(5,Math.max(1,stressVal+d));
+  const el=document.getElementById("stress-val");
+  if(el) el.textContent=stressVal;
 }
 
 const now = new Date();
@@ -1679,7 +1701,10 @@ function saveLog(){
     triggers:triggersLogged,
     protocolCount:document.querySelectorAll('#protocol-card .toggle.on').length,
     suppStates:suppStates,
-    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length
+    suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length,
+    wakingMood:document.getElementById('waking-mood')?document.getElementById('waking-mood').value:'',
+    bodyScan:document.getElementById('tog-body-scan')?document.getElementById('tog-body-scan').classList.contains('on'):false,
+    stressYesterday:stressVal
   };
   localStorage.setItem('lucid-log-'+dateStr,JSON.stringify(logData));
   if(isNew){
@@ -1754,6 +1779,13 @@ function loadEntryForEdit(dateStr){
   document.querySelectorAll('#main-log .toggle.on').forEach(t=>t.classList.remove('on'));
   // Reset counters
   C.sleep=7; C.water=0; C.coffee=0; C.tcaf=0; C.therb=0; C.alcohol=0;
+  stressVal=null;
+  const stressEl=document.getElementById("stress-val");
+  if(stressEl) stressEl.textContent="—";
+  const wakingMoodEl=document.getElementById("waking-mood");
+  if(wakingMoodEl) wakingMoodEl.value="";
+  const bodyScanTog=document.getElementById("tog-body-scan");
+  if(bodyScanTog) bodyScanTog.classList.remove("on");
   ['sleep','water','coffee','tcaf','therb','alcohol'].forEach(k=>{
     const el=document.getElementById(k+'-val');
     if(el) el.textContent=C[k];
@@ -1846,6 +1878,10 @@ function loadEntryForEdit(dateStr){
     const wokeBeforeTog=document.getElementById('tog-woke-before');
     if(existing.wokeDuring&&wokeDuringTog) wokeDuringTog.classList.add('on');
     if(existing.wokeBefore&&wokeBeforeTog) wokeBeforeTog.classList.add('on');
+    // Restore morning state fields
+    if(existing.wakingMood){const wm=document.getElementById("waking-mood");if(wm) wm.value=existing.wakingMood;}
+    if(existing.bodyScan){const bs=document.getElementById("tog-body-scan");if(bs) bs.classList.add("on");}
+    if(existing.stressYesterday!==null&&existing.stressYesterday!==undefined){stressVal=existing.stressYesterday;const sv=document.getElementById("stress-val");if(sv) sv.textContent=stressVal;}
     // Restore sugary drinks
     if(existing.sugaryDrinks){
       const sugaryEl=document.getElementById('tog-sugary');
@@ -2388,6 +2424,15 @@ async function runAnalysis(){
     }
   });
 
+  // Morning state aggregation
+  const morningLogs=logs.filter(l=>l.wakingMood||l.bodyScan||l.stressYesterday!==null&&l.stressYesterday!==undefined);
+  const anxiousWakes=logs.filter(l=>l.wakingMood==="anxious").length;
+  const calmWakes=logs.filter(l=>l.wakingMood==="calm").length;
+  const bodyScanDays=logs.filter(l=>l.bodyScan).length;
+  const stressLogs=logs.filter(l=>l.stressYesterday!==null&&l.stressYesterday!==undefined);
+  const avgStress=stressLogs.length?(stressLogs.reduce((a,l)=>a+l.stressYesterday,0)/stressLogs.length).toFixed(1):null;
+  const migraineStress=migraines.map(e=>{const prev=logs.find(l=>l.date===new Date(new Date(e.date).getTime()-86400000).toDateString());return prev&&prev.stressYesterday!==null?prev.stressYesterday:null;}).filter(v=>v!==null);
+  const avgMigraineStress=migraineStress.length?(migraineStress.reduce((a,b)=>a+b,0)/migraineStress.length).toFixed(1):null;
   const dataSummary=`FULL DATASET SUMMARY (all ${totalDays} logged days)
 Date range: ${logs.length?logs[0].date+' to '+logs[logs.length-1].date:'unknown'}
 
@@ -2437,7 +2482,13 @@ Days logged in this period: ${recentLogs.length}
 Migraines in this period: ${recentMigraines.length}
 Swim days in this period: ${recentSwimDays}
 Longest migraine-free streak in this period: ${recentStreak} days
-${recentMigraines.length>0?'Migraine dates in this period: '+recentMigraines.map(e=>e.date).join(', '):'No migraines in this period'}`;
+${recentMigraines.length>0?'Migraine dates in this period: '+recentMigraines.map(e=>e.date).join(', '):'No migraines in this period'}
+${morningLogs.length>0?`
+MORNING STATE (logged on ${morningLogs.length} of ${totalDays} days)
+Woke anxious: ${anxiousWakes} days | Woke calm: ${calmWakes} days
+Symptom scanning on waking: ${bodyScanDays} days
+${avgStress?'Average prior-day stress: '+avgStress+' of 5':''}
+${avgMigraineStress?'Average prior-day stress before a migraine: '+avgMigraineStress+' of 5':''}`:'Morning state: not yet logged'}`;
 
   const prompt=`You are a pattern observation tool for a migraine tracking app. Report what the logged data shows. Do not interpret beyond what the numbers support.
 
