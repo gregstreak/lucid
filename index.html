@@ -539,6 +539,34 @@ body {
     <div class="row"><div class="row-left"><div class="row-label">Checked for symptoms on waking</div></div><button class="toggle" id="tog-body-scan" onclick="this.classList.toggle('on')"></button></div>
     <div class="counter-row"><div class="row-left"><div class="row-label">Yesterday's stress level</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustStress(-1)">−</button><div class="counter-val" id="stress-val">—</div><button class="counter-btn" onclick="adjustStress(1)">+</button></div></div>
   </div>
+
+  <div class="section-label">Onset episode</div>
+  <div class="section-note">Symptoms that began today — whether or not they became a full migraine</div>
+  <div class="card">
+    <div class="row"><div class="row-left"><div class="row-label">Onset episode today?</div></div><button class="toggle" id="onset-ep-tog" onclick="this.classList.toggle('on');toggleEl('onset-ep-det',this)"></button></div>
+    <div id="onset-ep-det" style="display:none">
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <div class="row-left"><div class="row-label">How did you respond?</div></div>
+        <div class="flag-grid" id="onset-response-grid" style="width:100%;margin-top:6px">
+          <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Took medication</button>
+          <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Rested</button>
+          <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Breathing or relaxation</button>
+          <button class="flag-btn" onclick="this.classList.toggle('selected-teal')">Carried on</button>
+          <button class="flag-btn" onclick="this.classList.toggle('selected-teal')" style="grid-column:span 2">Anxious or spiralled</button>
+        </div>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <div class="row-left"><div class="row-label">Outcome</div></div>
+        <div class="gap-grid" id="onset-outcome-grid" style="width:100%;margin-top:6px">
+          <button class="gap-btn" onclick="selectOne(this,'onset-outcome')">Resolved without medication</button>
+          <button class="gap-btn" onclick="selectOne(this,'onset-outcome')">Took medication and resolved</button>
+          <button class="gap-btn" onclick="selectOne(this,'onset-outcome')" style="grid-column:span 2">Escalated to full migraine</button>
+        </div>
+      </div>
+      <div class="counter-row"><div class="row-left"><div class="row-label">Duration of episode</div><div class="row-sub">hours</div></div><div class="counter-controls"><button class="counter-btn" onclick="adjustCounter('onsetDur',-.5)">−</button><div class="counter-val" id="onsetDur-val">0</div><button class="counter-btn" onclick="adjustCounter('onsetDur',.5)">+</button></div></div>
+    </div>
+  </div>
+
   <div class="section-label">Hydration</div>
   <div class="section-note">Log what you actually drank today</div>
   <div class="card">
@@ -556,7 +584,7 @@ body {
     <div class="row"><div class="row-left"><div class="row-label">Ate within 2 hrs of waking</div></div><button class="toggle" id="tog-ate-woke" onclick="this.classList.toggle('on')"></button></div>
     <div class="row" style="flex-wrap:wrap;gap:8px">
       <div class="row-left"><div class="row-label">Longest gap between meals <button class="info-btn" onclick="toggleInfo('i-gap')">i</button></div><div class="info-panel" id="i-gap">Going more than 5–6 hours without eating causes blood sugar to drop, triggering a stress hormone response — one of the more reliable migraine triggers.</div></div>
-      <div class="gap-grid" style="width:100%;margin-top:6px"><button class="gap-btn" onclick="selectGap(this)">Under 4 hrs</button><button class="gap-btn" onclick="selectGap(this)">4–6 hrs</button><button class="gap-btn" onclick="selectGap(this)">6–8 hrs</button><button class="gap-btn" onclick="selectGap(this)">8+ hrs</button></div>
+      <div class="gap-grid" id="meal-gap-grid" style="width:100%;margin-top:6px"><button class="gap-btn" onclick="selectGap(this)">Under 4 hrs</button><button class="gap-btn" onclick="selectGap(this)">4–6 hrs</button><button class="gap-btn" onclick="selectGap(this)">6–8 hrs</button><button class="gap-btn" onclick="selectGap(this)">8+ hrs</button></div>
     </div>
     <div class="row"><div class="row-left"><div class="row-label">Meal with significant protein</div></div><button class="toggle" id="tog-protein" onclick="this.classList.toggle('on')"></button></div>
     <div class="row"><div class="row-left"><div class="row-label">Bedtime snack <button class="info-btn" onclick="toggleInfo('i-snack')">i</button></div><div class="info-panel" id="i-snack">Blood sugar drops naturally around 2–4am — a common migraine onset window. A small slow-release carbohydrate before sleep (two Medjool dates, a banana, a small bowl of oats) buffers this trough. Most useful on exercise days. Not about eating more — about preventing a specific overnight trigger.</div><div class="row-sub">Dates, banana, oats — slow-release carb only</div></div><button class="toggle" id="tog-bedtime-snack" onclick="this.classList.toggle('on')"></button></div>
@@ -935,8 +963,8 @@ body {
 <div class="toast" id="toast"></div>
 
 <script>
-const C = {sleep:7,water:0,coffee:0,tcaf:0,therb:0,alcohol:0};
-const CL = {sleep:[3,12],water:[0,20],coffee:[0,10],tcaf:[0,15],therb:[0,15],alcohol:[0,15]};
+const C = {sleep:7,water:0,coffee:0,tcaf:0,therb:0,alcohol:0,onsetDur:0};
+const CL = {sleep:[3,12],water:[0,20],coffee:[0,10],tcaf:[0,15],therb:[0,15],alcohol:[0,15],onsetDur:[0,24]};
 
 function adjustCounter(k,d){
   const[mn,mx]=CL[k];
@@ -1668,7 +1696,7 @@ function saveLog(){
   const ateWoke=document.getElementById('tog-ate-woke');
   const protein=document.getElementById('tog-protein');
   const bedtimeSnack=document.getElementById('tog-bedtime-snack');
-  const mealGap=document.querySelector('#main-log .gap-btn.selected')?.textContent||'';
+  const mealGap=document.querySelector('#meal-gap-grid .gap-btn.selected')?.textContent||'';
 
   // Capture triggers
   const triggersLogged=Array.from(document.querySelectorAll('#main-log .flag-btn.selected')).map(b=>b.textContent);
@@ -1677,6 +1705,11 @@ function saveLog(){
   const wokeDuring=document.getElementById('tog-woke-during');
   const wokeBefore=document.getElementById('tog-woke-before');
   const sugaryDrinks=document.getElementById('tog-sugary');
+
+  // Capture onset episode
+  const onsetEpTog=document.getElementById('onset-ep-tog');
+  const onsetResponse=Array.from(document.querySelectorAll('#onset-response-grid .flag-btn.selected-teal')).map(b=>b.textContent);
+  const onsetOutcome=document.querySelector('#onset-outcome-grid .gap-btn.selected')?.textContent||'';
 
   const logData={
     date:dateStr,
@@ -1704,7 +1737,11 @@ function saveLog(){
     suppTotal:JSON.parse(localStorage.getItem('lucid-supps')||'[]').length,
     wakingMood:document.getElementById('waking-mood')?document.getElementById('waking-mood').value:'',
     bodyScan:document.getElementById('tog-body-scan')?document.getElementById('tog-body-scan').classList.contains('on'):false,
-    stressYesterday:stressVal
+    stressYesterday:stressVal,
+    onsetEpisode:onsetEpTog?onsetEpTog.classList.contains('on'):false,
+    onsetResponse:onsetResponse,
+    onsetOutcome:onsetOutcome,
+    onsetDuration:C.onsetDur
   };
   localStorage.setItem('lucid-log-'+dateStr,JSON.stringify(logData));
   if(isNew){
@@ -1786,7 +1823,14 @@ function loadEntryForEdit(dateStr){
   if(wakingMoodEl) wakingMoodEl.value="";
   const bodyScanTog=document.getElementById("tog-body-scan");
   if(bodyScanTog) bodyScanTog.classList.remove("on");
-  ['sleep','water','coffee','tcaf','therb','alcohol'].forEach(k=>{
+  C.onsetDur=0;
+  const onsetEpTogReset=document.getElementById('onset-ep-tog');
+  const onsetEpDetReset=document.getElementById('onset-ep-det');
+  if(onsetEpTogReset) onsetEpTogReset.classList.remove('on');
+  if(onsetEpDetReset) onsetEpDetReset.style.display='none';
+  document.querySelectorAll('#onset-response-grid .flag-btn.selected-teal').forEach(b=>b.classList.remove('selected-teal'));
+  document.querySelectorAll('#onset-outcome-grid .gap-btn.selected').forEach(b=>b.classList.remove('selected'));
+  ['sleep','water','coffee','tcaf','therb','alcohol','onsetDur'].forEach(k=>{
     const el=document.getElementById(k+'-val');
     if(el) el.textContent=C[k];
   });
@@ -1869,7 +1913,7 @@ function loadEntryForEdit(dateStr){
     }
     // Restore meal gap
     if(existing.mealGap){
-      document.querySelectorAll('#main-log .gap-btn').forEach(b=>{
+      document.querySelectorAll('#meal-gap-grid .gap-btn').forEach(b=>{
         if(b.textContent===existing.mealGap) b.classList.add('selected');
       });
     }
@@ -1894,6 +1938,28 @@ function loadEntryForEdit(dateStr){
     if(existing.ateWoke&&ateWokeTog) ateWokeTog.classList.add('on');
     if(existing.protein&&proteinTog) proteinTog.classList.add('on');
     if(existing.bedtimeSnack&&bedtimeSnackTog) bedtimeSnackTog.classList.add('on');
+    // Restore onset episode
+    if(existing.onsetEpisode){
+      const oet=document.getElementById('onset-ep-tog');
+      const oed=document.getElementById('onset-ep-det');
+      if(oet) oet.classList.add('on');
+      if(oed) oed.style.display='block';
+    }
+    if(existing.onsetResponse&&existing.onsetResponse.length){
+      document.querySelectorAll('#onset-response-grid .flag-btn').forEach(b=>{
+        if(existing.onsetResponse.includes(b.textContent)) b.classList.add('selected-teal');
+      });
+    }
+    if(existing.onsetOutcome){
+      document.querySelectorAll('#onset-outcome-grid .gap-btn').forEach(b=>{
+        if(b.textContent===existing.onsetOutcome) b.classList.add('selected');
+      });
+    }
+    if(existing.onsetDuration!=null){
+      C.onsetDur=existing.onsetDuration;
+      const odv=document.getElementById('onsetDur-val');
+      if(odv) odv.textContent=existing.onsetDuration;
+    }
   }
 
   switchTab('log',document.getElementById('nav-log'));
@@ -2593,8 +2659,8 @@ if('serviceWorker' in navigator){
     document.querySelectorAll('#main-log .gap-btn.selected').forEach(b=>b.classList.remove('selected'));
     document.querySelectorAll('#main-log .flag-btn.selected').forEach(b=>b.classList.remove('selected'));
     document.querySelectorAll('#main-log .flag-btn.selected-teal').forEach(b=>b.classList.remove('selected-teal'));
-    C.sleep=7;C.water=0;C.coffee=0;C.tcaf=0;C.therb=0;C.alcohol=0;
-    ['sleep','water','coffee','tcaf','therb','alcohol'].forEach(k=>{
+    C.sleep=7;C.water=0;C.coffee=0;C.tcaf=0;C.therb=0;C.alcohol=0;C.onsetDur=0;
+    ['sleep','water','coffee','tcaf','therb','alcohol','onsetDur'].forEach(k=>{
       const el=document.getElementById(k+'-val');
       if(el) el.textContent=C[k];
     });
