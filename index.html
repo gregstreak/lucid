@@ -931,6 +931,7 @@ body {
 
   <button class="btn-primary" onclick="saveSettings()">Save settings</button>
   <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
+    <div id="analysis-diagnostics" style="font-size:11px;color:var(--text-light);margin-bottom:10px;line-height:1.6"></div>
     <button onclick="devUnlock()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Restore analysis access</button>
   </div>
 </div>
@@ -1205,6 +1206,7 @@ function launchApp(tab){
   renderExercise();
   renderPersonalTriggers();
   renderReport();
+  renderDiagnostics();
   renderDashStats();
   renderStreakAndCalendar();
   renderRecentEvents();
@@ -1626,6 +1628,39 @@ function devUnlock(){
   setTimeout(()=>runAnalysis(), 500);
 }
 
+// Checks unlock status, and if the local flag has drifted false despite a
+// past successful purchase, re-verifies the stored payment reference and
+// repairs the flag — so a missed/cleared flag doesn't silently block the
+// every-20 auto-trigger indefinitely.
+async function ensureUnlocked(){
+  if(localStorage.getItem('lucid-unlocked')==='true') return true;
+  const ref=localStorage.getItem('lucid-unlock-ref');
+  if(!ref) return false;
+  try{
+    const res=await fetch('/api/verify-payment',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({reference:ref})
+    });
+    const data=await res.json();
+    if(res.ok && data.success){
+      localStorage.setItem('lucid-unlocked','true');
+      return true;
+    }
+  } catch(e){}
+  return false;
+}
+
+function renderDiagnostics(){
+  const el=document.getElementById('analysis-diagnostics');
+  if(!el) return;
+  const count=localStorage.getItem('lucid-entry-count')||'0';
+  const unlocked=localStorage.getItem('lucid-unlocked')==='true';
+  const lastCount=localStorage.getItem('lucid-analysis-entry-count')||'none yet';
+  const lastDate=localStorage.getItem('lucid-analysis-date')||'never';
+  el.textContent='Entries: '+count+' · Unlocked: '+(unlocked?'yes':'no')+' · Last analysis at entry: '+lastCount+' · Last analysis date: '+lastDate;
+}
+
 function saveSettings(){
   const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
   profile.name=document.getElementById('s-name')?.value||profile.name;
@@ -1749,14 +1784,14 @@ function saveLog(){
     const newCount=entries+1;
     localStorage.setItem('lucid-entry-count',newCount);
     updateProgress(newCount);
-    // Auto re-run analysis every 20 new entries if unlocked
-    const unlocked=localStorage.getItem('lucid-unlocked')==='true';
-    if(unlocked){
-      const lastCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
-      if(newCount-lastCount>=20){
-        showToast('New data detected — running updated analysis…');
-        setTimeout(()=>runAnalysis(),1000);
-      }
+    // Auto re-run analysis at every exact multiple of 20 entries (20, 40, 60… 200, 220…)
+    if(newCount%20===0){
+      ensureUnlocked().then(unlocked=>{
+        if(unlocked){
+          showToast('20 new entries logged — running updated analysis…');
+          setTimeout(()=>runAnalysis(),1000);
+        }
+      });
     }
   }
   checkExistingLog();
@@ -2304,7 +2339,7 @@ function updateProgress(count){
     if(at) at.textContent='Pattern analysis';
     if(ab) ab.textContent=count===0
       ?'No entries yet. Start logging daily to build your dataset. The analysis reads across your sleep, exercise, supplements, hydration, and nutrition to find what actually precedes your migraines.'
-      :'Building your dataset — '+count+' of 20 entries logged. Keep going. The analysis runs at 20 entries and correlates your migraines against everything you have logged.';
+      :'Building your dataset — '+count+' of 20 entries logged. Keep going. The analysis runs every 20 entries and looks closely at your most recent 20 days, with your full history as reference.';
     if(am) am.textContent='Analysis runs every 20 entries.';
   }
 }
@@ -2397,28 +2432,40 @@ async function runAnalysis(){
   logs.sort((a,b)=>new Date(a.date)-new Date(b.date));
 
   const episodes=JSON.parse(localStorage.getItem('lucid-episodes')||'[]');
-  const migraines=episodes.filter(e=>e.type==='migraine');
-  const nearMisses=episodes.filter(e=>e.type==='near-miss');
+  const allMigraines=episodes.filter(e=>e.type==='migraine');
   const profile=JSON.parse(localStorage.getItem('lucid-profile')||'{}');
   const supps=JSON.parse(localStorage.getItem('lucid-supps')||'[]');
 
-  const totalDays=logs.length;
-  const swimDays=logs.filter(l=>l.swam);
+  // Core analysis window = most recent 20 logged days. Everything under
+  // "this window" below is scoped to it; lifetime figures are reference only.
+  const windowLogs=logs.slice(-20);
+  const totalDays=windowLogs.length;
+  const totalLifetimeDays=logs.length;
+  const windowStartDate=windowLogs.length?new Date(windowLogs[0].date):null;
+  const windowEndDate=windowLogs.length?new Date(windowLogs[windowLogs.length-1].date):null;
+  const inWindow=d=>windowStartDate&&windowEndDate&&new Date(d)>=windowStartDate&&new Date(d)<=windowEndDate;
+
+  const migraines=allMigraines.filter(e=>inWindow(e.date));
+  const nearMisses=episodes.filter(e=>e.type==='near-miss'&&inWindow(e.date));
+  const lifetimeMigraineCount=allMigraines.length;
+  const lifetimeAvgPerMonth=totalLifetimeDays>0?(lifetimeMigraineCount/(totalLifetimeDays/30)).toFixed(1):null;
+
+  const swimDays=windowLogs.filter(l=>l.swam);
   const swimTemps=swimDays.filter(l=>l.swimTemp).map(l=>parseFloat(l.swimTemp));
   const avgSwimTemp=swimTemps.length?(swimTemps.reduce((a,b)=>a+b,0)/swimTemps.length).toFixed(1):null;
-  const sleepLogs=logs.filter(l=>l.sleep);
+  const sleepLogs=windowLogs.filter(l=>l.sleep);
   const avgSleep=sleepLogs.length?(sleepLogs.reduce((a,l)=>a+l.sleep,0)/sleepLogs.length).toFixed(1):null;
-  const waterLogs=logs.filter(l=>l.water);
+  const waterLogs=windowLogs.filter(l=>l.water);
   const avgWater=waterLogs.length?(waterLogs.reduce((a,l)=>a+l.water,0)/waterLogs.length).toFixed(1):null;
-  const bedtimeSnackDays=logs.filter(l=>l.bedtimeSnack).length;
-  const proteinDays=logs.filter(l=>l.protein).length;
+  const bedtimeSnackDays=windowLogs.filter(l=>l.bedtimeSnack).length;
+  const proteinDays=windowLogs.filter(l=>l.protein).length;
   const suppTotal=supps.length||0;
-  const fullComplianceDays=suppTotal>0?logs.filter(l=>l.protocolCount>=suppTotal).length:0;
+  const fullComplianceDays=suppTotal>0?windowLogs.filter(l=>l.protocolCount>=suppTotal).length:0;
 
   const migrainePostSwim=migraines.filter(ep=>{
     const epDate=new Date(ep.date).toDateString();
     const prevDate=new Date(new Date(ep.date).getTime()-86400000).toDateString();
-    return logs.some(l=>l.swam&&(new Date(l.date).toDateString()===epDate||new Date(l.date).toDateString()===prevDate));
+    return windowLogs.some(l=>l.swam&&(new Date(l.date).toDateString()===epDate||new Date(l.date).toDateString()===prevDate));
   }).length;
 
   const onsetHours=migraines.filter(e=>e.onsetTime).map(e=>parseInt(e.onsetTime.split(':')[0]));
@@ -2431,6 +2478,7 @@ async function runAnalysis(){
   }).filter(s=>s!==null);
   const avgSleepBeforeMigraine=sleepBeforeMigraine.length?(sleepBeforeMigraine.reduce((a,b)=>a+b,0)/sleepBeforeMigraine.length).toFixed(1):null;
 
+  // Lifetime reference only — not part of the core window analysis
   const firstFullCompliance=suppTotal>0?logs.find(l=>l.protocolCount>=suppTotal):null;
   const suppStartDate=firstFullCompliance?firstFullCompliance.date:null;
   let migrainesBeforeSupps=null,migrainesAfterSupps=null,daysBeforeSupps=null,daysAfterSupps=null;
@@ -2438,20 +2486,20 @@ async function runAnalysis(){
     const suppStart=new Date(suppStartDate);
     daysBeforeSupps=logs.filter(l=>new Date(l.date)<suppStart).length;
     daysAfterSupps=logs.filter(l=>new Date(l.date)>=suppStart).length;
-    migrainesBeforeSupps=migraines.filter(e=>new Date(e.date)<suppStart).length;
-    migrainesAfterSupps=migraines.filter(e=>new Date(e.date)>=suppStart).length;
+    migrainesBeforeSupps=allMigraines.filter(e=>new Date(e.date)<suppStart).length;
+    migrainesAfterSupps=allMigraines.filter(e=>new Date(e.date)>=suppStart).length;
   }
 
   const severities=migraines.filter(e=>e.severity).map(e=>parseInt(e.severity));
   const avgSeverity=severities.length?(severities.reduce((a,b)=>a+b,0)/severities.length).toFixed(1):null;
   const allMeds=[];
-  episodes.forEach(ep=>{(ep.steps||[]).forEach(s=>{if(s.medication)allMeds.push(s.medication);});});
-  const escalations=episodes.filter(ep=>(ep.steps||[]).length>1).length;
+  episodes.filter(e=>inWindow(e.date)).forEach(ep=>{(ep.steps||[]).forEach(s=>{if(s.medication)allMeds.push(s.medication);});});
+  const escalations=episodes.filter(ep=>inWindow(ep.date)&&(ep.steps||[]).length>1).length;
 
-  // Longest migraine-free streak
+  // Longest migraine-free streak, within the window
   let longestStreak=0,currentStreak=0;
   const migraineDateSet=new Set(migraines.map(e=>new Date(e.date).toDateString()));
-  logs.forEach(l=>{
+  windowLogs.forEach(l=>{
     if(!migraineDateSet.has(new Date(l.date).toDateString())){
       currentStreak++;
       if(currentStreak>longestStreak) longestStreak=currentStreak;
@@ -2460,47 +2508,48 @@ async function runAnalysis(){
     }
   });
 
-  // Migraine clusters (2+ within 3 days)
-  const sortedMigraines=[...migraines].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const clusters=[];
-  let i=0;
-  while(i<sortedMigraines.length){
-    let j=i+1;
-    while(j<sortedMigraines.length&&(new Date(sortedMigraines[j].date)-new Date(sortedMigraines[i].date))/(1000*60*60*24)<=3) j++;
-    if(j-i>=2) clusters.push(sortedMigraines.slice(i,j).map(e=>e.date));
-    i=j;
-  }
-
-  // Period since last analysis — use stored date, not count as index
-  const lastAnalysisCount=parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0');
-  const lastAnalysisDate=localStorage.getItem('lucid-analysis-date-iso')||null;
-  const cutoffDate=lastAnalysisDate?new Date(lastAnalysisDate):null;
-  const recentLogs=cutoffDate?logs.filter(l=>new Date(l.date)>cutoffDate):logs;
-  const recentMigraines=cutoffDate?migraines.filter(e=>new Date(e.date)>cutoffDate):migraines;
-  const recentSwimDays=recentLogs.filter(l=>l.swam).length;
-
-  // Recent streak calc
-  let recentStreak=0,recentCurrentStreak=0;
-  recentLogs.forEach(l=>{
-    if(!migraineDateSet.has(new Date(l.date).toDateString())){
-      recentCurrentStreak++;
-      if(recentCurrentStreak>recentStreak) recentStreak=recentCurrentStreak;
+  // Longest migraine-free streak, lifetime — reference only
+  let lifetimeLongestStreak=0,lifetimeCurrentStreak=0;
+  const lifetimeMigraineDateSet=new Set(allMigraines.map(e=>new Date(e.date).toDateString()));
+  logs.forEach(l=>{
+    if(!lifetimeMigraineDateSet.has(new Date(l.date).toDateString())){
+      lifetimeCurrentStreak++;
+      if(lifetimeCurrentStreak>lifetimeLongestStreak) lifetimeLongestStreak=lifetimeCurrentStreak;
     } else {
-      recentCurrentStreak=0;
+      lifetimeCurrentStreak=0;
     }
   });
 
-  // Morning state aggregation
-  const morningLogs=logs.filter(l=>l.wakingMood||l.bodyScan||l.stressYesterday!==null&&l.stressYesterday!==undefined);
-  const anxiousWakes=logs.filter(l=>l.wakingMood==="anxious").length;
-  const calmWakes=logs.filter(l=>l.wakingMood==="calm").length;
-  const bodyScanDays=logs.filter(l=>l.bodyScan).length;
-  const stressLogs=logs.filter(l=>l.stressYesterday!==null&&l.stressYesterday!==undefined);
+  // Migraine clusters within the window (2+ within 3 days)
+  const sortedMigraines=[...migraines].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const clusters=[];
+  let ci=0;
+  while(ci<sortedMigraines.length){
+    let cj=ci+1;
+    while(cj<sortedMigraines.length&&(new Date(sortedMigraines[cj].date)-new Date(sortedMigraines[ci].date))/(1000*60*60*24)<=3) cj++;
+    if(cj-ci>=2) clusters.push(sortedMigraines.slice(ci,cj).map(e=>e.date));
+    ci=cj;
+  }
+
+  // Morning state aggregation, within the window
+  const morningLogs=windowLogs.filter(l=>l.wakingMood||l.bodyScan||l.stressYesterday!==null&&l.stressYesterday!==undefined);
+  const anxiousWakes=windowLogs.filter(l=>l.wakingMood==="anxious").length;
+  const calmWakes=windowLogs.filter(l=>l.wakingMood==="calm").length;
+  const bodyScanDays=windowLogs.filter(l=>l.bodyScan).length;
+  const stressLogs=windowLogs.filter(l=>l.stressYesterday!==null&&l.stressYesterday!==undefined);
   const avgStress=stressLogs.length?(stressLogs.reduce((a,l)=>a+l.stressYesterday,0)/stressLogs.length).toFixed(1):null;
-  const migraineStress=migraines.map(e=>{const prev=logs.find(l=>l.date===new Date(new Date(e.date).getTime()-86400000).toDateString());return prev&&prev.stressYesterday!==null?prev.stressYesterday:null;}).filter(v=>v!==null);
+  const migraineStress=migraines.map(e=>{const prev=windowLogs.find(l=>l.date===new Date(new Date(e.date).getTime()-86400000).toDateString());return prev&&prev.stressYesterday!==null?prev.stressYesterday:null;}).filter(v=>v!==null);
   const avgMigraineStress=migraineStress.length?(migraineStress.reduce((a,b)=>a+b,0)/migraineStress.length).toFixed(1):null;
-  const dataSummary=`FULL DATASET SUMMARY (all ${totalDays} logged days)
-Date range: ${logs.length?logs[0].date+' to '+logs[logs.length-1].date:'unknown'}
+
+  const dataSummary=`CORE ANALYSIS WINDOW: most recent ${totalDays} logged days
+Date range of this window: ${windowLogs.length?windowLogs[0].date+' to '+windowLogs[windowLogs.length-1].date:'unknown'}
+
+LIFETIME REFERENCE (the window above is the primary subject; draw on this only where it yields a genuinely interesting finding — e.g. a before/after supplement effect — not as routine commentary)
+Total days logged, all time: ${totalLifetimeDays}
+Total migraines logged, all time: ${lifetimeMigraineCount}
+Overall average migraines per month, all time: ${lifetimeAvgPerMonth||'insufficient data'}
+Longest migraine-free streak, all time: ${lifetimeLongestStreak} days
+${suppStartDate?`First full supplement compliance date: ${suppStartDate} — before: ${daysBeforeSupps} days logged/${migrainesBeforeSupps} migraines, after: ${daysAfterSupps} days logged/${migrainesAfterSupps} migraines`:'Supplement before/after comparison: not yet established'}
 
 USER PROFILE (self-reported)
 Age range: ${profile.age||'not provided'}
@@ -2512,27 +2561,22 @@ Personal history notes: ${profile.history||'none provided'}
 
 PREVENTION SUPPLEMENTS CURRENTLY LOGGED
 ${supps.length?supps.map(s=>s.name+(s.dose?' — '+s.dose:'')).join('\n'):'none logged'}
-Full compliance days: ${fullComplianceDays} of ${totalDays}
-${suppStartDate?`
-SUPPLEMENT BEFORE/AFTER COMPARISON
-First full compliance date: ${suppStartDate}
-Before: ${daysBeforeSupps} days logged, ${migrainesBeforeSupps} migraines
-After: ${daysAfterSupps} days logged, ${migrainesAfterSupps} migraines`:''}
+Full compliance days in this window: ${fullComplianceDays} of ${totalDays}
 
-EXERCISE
+EXERCISE (this window)
 Swim days: ${swimDays.length} of ${totalDays} (${Math.round(swimDays.length/Math.max(1,totalDays)*100)}%)
 ${avgSwimTemp?'Average logged water temperature: '+avgSwimTemp+'°C':'Water temperature: not consistently logged'}
 
-SLEEP
+SLEEP (this window)
 Average sleep: ${avgSleep||'insufficient data'} hours
 ${avgSleepBeforeMigraine?'Average sleep night before a migraine: '+avgSleepBeforeMigraine+' hours':''}
 
-NUTRITION
+NUTRITION (this window)
 Average water intake: ${avgWater||'insufficient data'} glasses/day
 Bedtime snack logged: ${bedtimeSnackDays} of ${totalDays} days (${Math.round(bedtimeSnackDays/Math.max(1,totalDays)*100)}%)
 Meal with significant protein logged: ${proteinDays} of ${totalDays} days
 
-MIGRAINE EVENTS (full period)
+MIGRAINE EVENTS (this window)
 Total migraines logged: ${migraines.length}
 Near misses logged: ${nearMisses.length}
 Average severity: ${avgSeverity||'insufficient data'}/10
@@ -2540,17 +2584,10 @@ ${onsetHours.length?'Onset times: '+nightOnset+' of '+onsetHours.length+' betwee
 Migraines within 24hrs of a swim day: ${migrainePostSwim} of ${migraines.length}
 Episodes requiring escalation to second medication: ${escalations}
 Medications used: ${[...new Set(allMeds)].join(', ')||'none logged'}
-Longest migraine-free streak (logged days): ${longestStreak} days
-Migraine clusters (2+ within 3 days): ${clusters.length>0?clusters.length+' cluster(s) — '+clusters.map(c=>c.join(' and ')).join('; '):'none identified'}
-
-SINCE LAST ANALYSIS (most recent ${recentLogs.length} entries)
-Days logged in this period: ${recentLogs.length}
-Migraines in this period: ${recentMigraines.length}
-Swim days in this period: ${recentSwimDays}
-Longest migraine-free streak in this period: ${recentStreak} days
-${recentMigraines.length>0?'Migraine dates in this period: '+recentMigraines.map(e=>e.date).join(', '):'No migraines in this period'}
+Longest migraine-free streak in this window: ${longestStreak} days
+Migraine clusters in this window (2+ within 3 days): ${clusters.length>0?clusters.length+' cluster(s) — '+clusters.map(c=>c.join(' and ')).join('; '):'none identified'}
 ${morningLogs.length>0?`
-MORNING STATE (logged on ${morningLogs.length} of ${totalDays} days)
+MORNING STATE (logged on ${morningLogs.length} of ${totalDays} days in this window)
 Woke anxious: ${anxiousWakes} days | Woke calm: ${calmWakes} days
 Symptom scanning on waking: ${bodyScanDays} days
 ${avgStress?'Average prior-day stress: '+avgStress+' of 5':''}
@@ -2560,14 +2597,14 @@ ${avgMigraineStress?'Average prior-day stress before a migraine: '+avgMigraineSt
 
 RULES:
 1. Observe only. Correlation is not causation. Never state a cause.
-2. Migraine is complex and individual. No short dataset determines cause.
+2. The core analysis window is the most recent ${totalDays} logged days — a small sample. Do not overstate confidence in any pattern found there.
 3. Where observations align with established migraine science, note that alignment with "consistent with research on X" — not "X is causing your migraines."
 4. Where data is insufficient, say so. Do not fill gaps.
 5. Never contradict established evidence. Exercise has robust evidence as beneficial for migraine prevention.
-6. Weight the user's personal history. Patterns in short data that contradict decades of lived experience should be flagged as worth monitoring, not presented as findings.
-7. Engage all variables: nutrition, activity, sleep, hydration, supplements, exercise, temporal patterns.
-8. The SINCE LAST ANALYSIS section shows what is new. Compare it to the full dataset. If the recent period shows a notably different frequency, streak, or cluster pattern — state that explicitly. If the longest migraine-free streak is above 7 days, mention it specifically.
-9. Do not shape findings to match what a user might want to hear. If the data shows no improvement, say so. If it shows no clear signal on any variable, say so.
+6. Weight the user's personal history. Patterns in this window that contradict decades of lived experience should be flagged as worth monitoring, not presented as findings.
+7. Engage all variables available within the window: nutrition, activity, sleep, hydration, supplements, exercise, temporal patterns.
+8. The window above is the primary subject — most of the report should be about it. The LIFETIME REFERENCE section is available for genuine secondary findings, most notably the supplement before/after comparison and the lifetime longest streak — report on these if they show something real (e.g. a meaningful before/after difference), but don't force commentary on them if there's nothing there. Don't let lifetime material crowd out the window as the main subject.
+9. Do not shape findings to match what a user might want to hear. If the window shows no improvement, say so. If it shows no clear signal on any variable, say so.
 10. Plain prose only. No lists, no headers. 6-8 sentences.
 
 DATA:
