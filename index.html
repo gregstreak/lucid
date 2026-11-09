@@ -841,6 +841,7 @@ body {
     </div>
     <div id="analysis-running" style="display:none;margin-top:12px;text-align:center;font-size:13px;color:var(--dawn-dark)">Running your analysis…</div>
     <div id="analysis-result" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #E8C4A4;font-size:13px;color:#8A4A20;line-height:1.7"></div>
+    <button id="analysis-pdf-btn" onclick="exportReportPDF()" style="display:none;margin-top:12px;padding:9px 16px;border:1px solid #E8C4A4;background:none;border-radius:var(--radius-sm);font-size:13px;color:#8A4A20;cursor:pointer;font-family:var(--font-sans)">Save report as PDF</button>
   </div>
   <div class="ss-mark"><div class="ss-dot"></div><span>by Signal &amp; Seed</span><div class="ss-dot"></div></div>
 </div>
@@ -1398,6 +1399,7 @@ function renderReport(){
   const rb=document.getElementById('report-body');
   if(!rb) return;
 
+  if(unlocked){loadJsPdf().catch(()=>{});}
   const analysisHist=unlocked?getAnalysisHistory():[];
   let analysisHtml='Your AI analysis findings will appear here after your next analysis.';
   if(analysisHist.length){
@@ -2424,15 +2426,129 @@ function restoreSavedAnalysis(){
   if(at) at.textContent='Your pattern analysis';
   if(ab) ab.style.display='none';
   if(ar){ar.style.display='block';ar.textContent=latest.text;}
+  const pdfB=document.getElementById('analysis-pdf-btn');
+  if(pdfB) pdfB.style.display='inline-block';
   if(am) am.textContent='Last analysis: '+analysisLabel(latest)+'. Runs every 20 entries.';
 }
 
-function exportReportPDF(){
+// ---- PDF export: builds a real PDF file and hands it to the share sheet ----
+let _jsPdfPromise=null;
+function loadJsPdf(){
+  if(window.jspdf&&window.jspdf.jsPDF) return Promise.resolve();
+  if(_jsPdfPromise) return _jsPdfPromise;
+  const urls=['https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js','https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js'];
+  const tryLoad=i=>new Promise((resolve,reject)=>{
+    if(i>=urls.length){reject(new Error('PDF library could not be loaded'));return;}
+    const sc=document.createElement('script');
+    sc.src=urls[i];
+    sc.onload=()=>{(window.jspdf&&window.jspdf.jsPDF)?resolve():tryLoad(i+1).then(resolve,reject);};
+    sc.onerror=()=>{sc.remove();tryLoad(i+1).then(resolve,reject);};
+    document.head.appendChild(sc);
+  });
+  _jsPdfPromise=tryLoad(0).catch(e=>{_jsPdfPromise=null;throw e;});
+  return _jsPdfPromise;
+}
+
+function buildReportPdf(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight();
+  const M=18, keyW=64, valX=M+keyW+4, valW=W-M-valX, fullW=W-2*M;
+  const footerH=16;
+  let y=M;
+  const clean=t=>String(t==null?'':t).replace(/\s+/g,' ').replace(/[^\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026]/g,'').trim();
+  const lh=()=>doc.getLineHeight()/doc.internal.scaleFactor;
+  const room=h=>{ if(y+h>H-M-footerH){doc.addPage();y=M;} };
+  const teal=[27,106,86], dark=[40,40,40], grey=[120,120,120];
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(...teal);
+  doc.text('lucid',M,y+5); y+=9;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...grey);
+  const sub=clean((document.getElementById('report-subtitle')||{}).textContent)||'Patient report';
+  doc.text(sub,M,y+1); y+=4;
+  doc.setDrawColor(200,220,212); doc.line(M,y,W-M,y); y+=6;
+
+  document.querySelectorAll('#report-body .report-section').forEach(sec=>{
+    const titleEl=sec.querySelector('.report-section-title');
+    const rows=sec.querySelectorAll('.report-row');
+    room(14);
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...teal);
+    doc.text(clean(titleEl&&titleEl.textContent),M,y+3); y+=7;
+    doc.setFontSize(9.5);
+    rows.forEach(r=>{
+      const k=clean((r.querySelector('.report-key')||{}).textContent);
+      const v=clean((r.querySelector('.report-val')||{}).textContent)||'-';
+      doc.setFont('helvetica','normal');
+      const kl=doc.splitTextToSize(k,keyW), vl=doc.splitTextToSize(v,valW);
+      const n=Math.max(kl.length,vl.length);
+      room(n*lh()+2);
+      doc.setTextColor(...grey); doc.text(kl,M,y+3);
+      doc.setTextColor(...dark); doc.text(vl,valX,y+3);
+      y+=n*lh()+1.5;
+      doc.setDrawColor(230,236,233); doc.line(M,y-0.5,W-M,y-0.5);
+    });
+    y+=5;
+  });
+
+  const hist=getAnalysisHistory();
+  room(24);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...teal);
+  doc.text('Pattern summary for clinical review',M,y+3); y+=7;
+  if(hist.length){
+    const a=hist[hist.length-1];
+    doc.setFont('helvetica','italic'); doc.setFontSize(8.5); doc.setTextColor(...grey);
+    doc.text(clean(analysisLabel(a)),M,y+3); y+=6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...dark);
+    doc.splitTextToSize(clean(a.text),fullW).forEach(line=>{ room(lh()); doc.text(line,M,y+3); y+=lh(); });
+  } else {
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...grey);
+    doc.text('No AI analysis has been generated yet.',M,y+3); y+=6;
+  }
+
+  const note=clean((document.querySelector('#main-report .report-note')||{}).textContent);
+  const pages=doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...grey);
+    doc.splitTextToSize(note,fullW-20).forEach((line,idx)=>doc.text(line,M,H-M-6+idx*3.2));
+    doc.text('Page '+i+' of '+pages,W-M,H-M+2,{align:'right'});
+  }
+  const stamp=new Date().toISOString().slice(0,10);
+  const blob=doc.output('blob');
+  return new File([blob],'Lucid-report-'+stamp+'.pdf',{type:'application/pdf'});
+}
+
+function savePdfFile(file){
+  const url=URL.createObjectURL(file);
+  const a=document.createElement('a');
+  a.href=url; a.download=file.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),15000);
+}
+
+async function exportReportPDF(){
   if(localStorage.getItem('lucid-unlocked')!=='true'){handleUnlock();return;}
-  const reportTab=document.getElementById('nav-report');
-  switchTab('report',reportTab); // make sure the report is rendered and visible
-  showToast('Choose "Save as PDF" or Share in the print dialog');
-  setTimeout(()=>{ try{window.print();}catch(e){showToast('Printing is not available here — open Lucid in Safari to export');} },400);
+  switchTab('report',document.getElementById('nav-report'));
+  try{
+    // Library is preloaded when the Report tab opens; only wait if it is not ready yet
+    if(!(window.jspdf&&window.jspdf.jsPDF)){showToast('Preparing PDF…');await loadJsPdf();}
+    const file=buildReportPdf();
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file],title:'Lucid report'});
+        return;
+      }catch(err){
+        if(err&&err.name==='AbortError') return;                       // user closed the share sheet
+        if(err&&err.name==='NotAllowedError'){showToast('PDF ready — tap Export again to share');return;}
+        throw err;
+      }
+    }
+    savePdfFile(file);
+    showToast('PDF saved');
+  }catch(e){
+    showToast('Could not build the PDF — opening print instead');
+    setTimeout(()=>{try{window.print();}catch(_){}},500);
+  }
 }
 
 function handleUnlock(){
@@ -2714,6 +2830,8 @@ ${dataSummary}`;
     if(ar) ar.style.display='none';
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
+    const pdfB2=document.getElementById('analysis-pdf-btn');
+    if(pdfB2) pdfB2.style.display='inline-block';
     if(ab) ab.style.display='none';
     const analysisHistory=getAnalysisHistory();
     const nowDate=new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
