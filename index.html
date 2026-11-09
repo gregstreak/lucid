@@ -340,6 +340,14 @@ body {
     --dawn-light: #2A1E14;
   }
 }
+@media print {
+  .app-nav, .toast, .no-print, #report-unlock-wrap, #pdf-btn, .ss-mark { display: none !important; }
+  .screen, .main-screen { display: none !important; }
+  #main-report { display: block !important; padding: 0 !important; }
+  #report-share-card { display: none !important; }
+  body { background: #fff !important; }
+  .card, .analysis-card { break-inside: avoid; box-shadow: none !important; }
+}
 </style>
 </head>
 <body>
@@ -851,7 +859,7 @@ body {
 
   <div id="report-body"></div>
 
-  <div class="card" style="background:var(--teal-light);border-color:var(--teal-mid)">
+  <div class="card" id="report-share-card" style="background:var(--teal-light);border-color:var(--teal-mid)">
     <div style="font-size:13px;color:var(--teal-deeper);font-weight:500;margin-bottom:4px">Share with your doctor</div>
     <div style="font-size:12px;color:var(--teal-dark);line-height:1.6;margin-bottom:10px">This report summarises your logged data. It is not a medical document — it is a structured summary to support your consultation.</div>
     <div id="report-unlock-wrap">
@@ -1356,13 +1364,50 @@ function renderReport(){
   const onsetPattern=onsetTimes.length?(nightOnset/onsetTimes.length*100).toFixed(0)+'% between midnight and 5am':'—';
 
   const pending=`<span style="color:var(--text-light);font-style:italic">Pending — unlocks with AI analysis</span>`;
+
   const notEnough=`<span style="color:var(--text-light);font-style:italic">Not enough data yet</span>`;
+
+  // Correlation figures (counts with base rates — descriptive, not causal). Unlocked users only.
+  const dayKey=d=>new Date(d).toDateString();
+  const logByDay={};
+  logs.forEach(l=>{logByDay[dayKey(l.date)]=l;});
+  const prevLogOf=ep=>logByDay[dayKey(new Date(ep.date).getTime()-86400000)];
+  const pctOf=(n,d)=>d?Math.round(n/d*100)+'%':'—';
+  let corrSwim=notEnough,corrSnack=notEnough,corrSleep=notEnough,freqTrend=notEnough;
+  const corrBaro=`<span style="color:var(--text-light);font-style:italic">Not recorded in the daily log</span>`;
+  if(unlocked && migraines.length>0 && totalLogs>0){
+    const nearSwim=migraines.filter(ep=>{const same=logByDay[dayKey(ep.date)];const prev=prevLogOf(ep);return (same&&same.swam)||(prev&&prev.swam);}).length;
+    corrSwim=nearSwim+' of '+migraines.length+' migraines within 24h of a swim day (swim days are '+pctOf(swimDays.length,totalLogs)+' of logged days)';
+    const withPrev=migraines.filter(ep=>prevLogOf(ep));
+    const afterSnack=withPrev.filter(ep=>prevLogOf(ep).bedtimeSnack).length;
+    const snackDays=logs.filter(l=>l.bedtimeSnack).length;
+    corrSnack=withPrev.length?afterSnack+' of '+withPrev.length+' migraines followed a bedtime snack (snack logged on '+pctOf(snackDays,totalLogs)+' of days)':notEnough;
+    const sleepBefore=withPrev.map(ep=>prevLogOf(ep).sleep).filter(v=>v);
+    corrSleep=(sleepBefore.length&&avgSleep)?(sleepBefore.reduce((a,b)=>a+b,0)/sleepBefore.length).toFixed(1)+'h before a migraine vs '+avgSleep+'h overall':notEnough;
+  }
+  if(unlocked){
+    const nowMs=Date.now(),d30=30*86400000;
+    const last30=migraines.filter(e=>nowMs-new Date(e.date).getTime()<=d30).length;
+    const prior30=migraines.filter(e=>{const a=nowMs-new Date(e.date).getTime();return a>d30&&a<=2*d30;}).length;
+    freqTrend=totalLogs>=30?last30+' in the last 30 days vs '+prior30+' in the 30 before':notEnough;
+  }
 
   const rs=document.getElementById('report-subtitle');
   if(rs) rs.textContent=totalLogs>0?'Patient report — '+totalLogs+' entries logged':'Patient report — no entries yet';
 
   const rb=document.getElementById('report-body');
   if(!rb) return;
+
+  const analysisHist=unlocked?getAnalysisHistory():[];
+  let analysisHtml='Your AI analysis findings will appear here after your next analysis.';
+  if(analysisHist.length){
+    const latestA=analysisHist[analysisHist.length-1];
+    analysisHtml='<div style="font-size:11px;opacity:.75;margin-bottom:6px">'+escHtml(analysisLabel(latestA))+'</div>'+escHtml(latestA.text);
+    if(analysisHist.length>1){
+      analysisHtml+='<details class="no-print" style="margin-top:10px"><summary style="font-size:12px;cursor:pointer">Earlier analyses ('+(analysisHist.length-1)+')</summary>'+
+        analysisHist.slice(0,-1).reverse().map(a=>'<div style="margin-top:10px;padding-top:10px;border-top:1px solid #E8C4A4"><div style="font-size:11px;opacity:.75;margin-bottom:4px">'+escHtml(analysisLabel(a))+'</div>'+escHtml(a.text)+'</div>').join('')+'</details>';
+    }
+  }
 
   rb.innerHTML=`
     <div class="card">
@@ -1385,7 +1430,7 @@ function renderReport(){
         <div class="report-row"><span class="report-key">Warning signs only</span><span class="report-val">${warnings.length}</span></div>
         <div class="report-row"><span class="report-key">Avg severity</span><span class="report-val">${avgSeverity?avgSeverity+' / 10':notEnough}</span></div>
         <div class="report-row"><span class="report-key">Onset pattern</span><span class="report-val">${onsetTimes.length?onsetPattern:notEnough}</span></div>
-        <div class="report-row"><span class="report-key">Frequency trend</span><span class="report-val">${pending}</span></div>
+        <div class="report-row"><span class="report-key">Frequency trend</span><span class="report-val">${unlocked?freqTrend:pending}</span></div>
       </div>
     </div>
 
@@ -1425,18 +1470,18 @@ function renderReport(){
     <div class="card">
       <div class="report-section">
         <div class="report-section-title">Pattern correlations</div>
-        <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${pending}</span></div>
-        <div class="report-row"><span class="report-key">Bedtime snack correlation</span><span class="report-val">${pending}</span></div>
-        <div class="report-row"><span class="report-key">Barometric pressure correlation</span><span class="report-val">${pending}</span></div>
-        <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${pending}</span></div>
+        <div class="report-row"><span class="report-key">Post-swim migraine correlation</span><span class="report-val">${unlocked?corrSwim:pending}</span></div>
+        <div class="report-row"><span class="report-key">Bedtime snack correlation</span><span class="report-val">${unlocked?corrSnack:pending}</span></div>
+        <div class="report-row"><span class="report-key">Barometric pressure correlation</span><span class="report-val">${unlocked?corrBaro:pending}</span></div>
+        <div class="report-row"><span class="report-key">Sleep correlation</span><span class="report-val">${unlocked?corrSleep:pending}</span></div>
       </div>
-      <div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">Correlations calculate at 20 entries and unlock with AI analysis.</div>
+      <div style="font-size:12px;color:var(--text-light);margin-top:10px;line-height:1.6">${unlocked?'Counts are descriptive and show base rates alongside; they do not establish cause.':'Correlations calculate at 20 entries and unlock with AI analysis.'}</div>
     </div>
 
     ${unlocked
       ? `<div class="analysis-card">
           <div class="analysis-title">Pattern summary for clinical review</div>
-          <div class="analysis-body" id="report-pattern-summary">Your AI analysis findings will appear here.</div>
+          <div class="analysis-body" id="report-pattern-summary">${analysisHtml}</div>
         </div>`
       : `<div style="background:var(--dawn-light);border:1px solid #E8C4A4;border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:.75rem">
           <div style="font-size:13px;font-weight:500;color:var(--dawn-dark);margin-bottom:6px">Pattern summary</div>
@@ -1612,6 +1657,7 @@ function resetUnlockForTesting(){
   localStorage.removeItem('lucid-unlocked');
   localStorage.removeItem('lucid-unlock-ref');
   localStorage.removeItem('lucid-analysis-result');
+  localStorage.removeItem('lucid-analysis-history');
   localStorage.removeItem('lucid-analysis-date');
   localStorage.removeItem('lucid-analysis-date-iso');
   localStorage.removeItem('lucid-analysis-entry-count');
@@ -2332,7 +2378,8 @@ function updateProgress(count){
     const pdfNote=document.getElementById('report-unlock-note');
     if(pdfNote) pdfNote.style.display='none';
     const pdfBtn=document.getElementById('pdf-btn');
-    if(pdfBtn) pdfBtn.onclick=()=>showToast('PDF export coming in next version');
+    if(pdfBtn) pdfBtn.onclick=exportReportPDF;
+    restoreSavedAnalysis();
   } else {
     const remaining=target-count;
     if(pn) pn.textContent=remaining+' more '+(remaining===1?'day':'days')+' until your first pattern analysis';
@@ -2344,6 +2391,50 @@ function updateProgress(count){
   }
 }
 
+
+// ---- Saved analysis: history, restore, export ----
+function getAnalysisHistory(){
+  let h=[];
+  try{h=JSON.parse(localStorage.getItem('lucid-analysis-history')||'[]');}catch(e){h=[];}
+  if(!Array.isArray(h)) h=[];
+  if(!h.length){
+    // Older installs only stored the latest result — seed history from it
+    const t=localStorage.getItem('lucid-analysis-result');
+    if(t) h=[{text:t,date:localStorage.getItem('lucid-analysis-date')||'',iso:localStorage.getItem('lucid-analysis-date-iso')||'',entryCount:parseInt(localStorage.getItem('lucid-analysis-entry-count')||'0')}];
+  }
+  return h;
+}
+function escHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function analysisLabel(a){
+  return (a.date||'date unknown')+(a.entryCount?' · at entry '+a.entryCount:'');
+}
+// Puts the most recent saved analysis back on the Dashboard card after a reload
+function restoreSavedAnalysis(){
+  const hist=getAnalysisHistory();
+  if(!hist.length) return;
+  const latest=hist[hist.length-1];
+  const at=document.getElementById('analysis-title');
+  const ab=document.getElementById('analysis-body');
+  const ar=document.getElementById('analysis-result');
+  const am=document.getElementById('analysis-meta');
+  const running=document.getElementById('analysis-running');
+  if(running && running.style.display==='block') return; // a run is in progress
+  if(at) at.textContent='Your pattern analysis';
+  if(ab) ab.style.display='none';
+  if(ar){ar.style.display='block';ar.textContent=latest.text;}
+  if(am) am.textContent='Last analysis: '+analysisLabel(latest)+'. Runs every 20 entries.';
+}
+
+function exportReportPDF(){
+  if(localStorage.getItem('lucid-unlocked')!=='true'){handleUnlock();return;}
+  const reportTab=document.getElementById('nav-report');
+  switchTab('report',reportTab); // make sure the report is rendered and visible
+  showToast('Choose "Save as PDF" or Share in the print dialog');
+  setTimeout(()=>{ try{window.print();}catch(e){showToast('Printing is not available here — open Lucid in Safari to export');} },400);
+}
+
 function handleUnlock(){
   // Show the modal so the user sees the pricing detail before the Paystack popup
   const modal=document.getElementById('unlock-modal');
@@ -2352,7 +2443,7 @@ function handleUnlock(){
 
 function handleReportUnlock(){
   const unlocked=localStorage.getItem('lucid-unlocked')==='true';
-  if(unlocked){showToast('PDF export coming in next version');return;}
+  if(unlocked){exportReportPDF();return;}
   handleUnlock();
 }
 
@@ -2624,10 +2715,15 @@ ${dataSummary}`;
     if(at) at.textContent='Your pattern analysis';
     if(aresult){aresult.style.display='block';aresult.textContent=text;}
     if(ab) ab.style.display='none';
+    const analysisHistory=getAnalysisHistory();
+    const nowDate=new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
+    analysisHistory.push({text:text,date:nowDate,iso:new Date().toISOString(),entryCount:parseInt(localStorage.getItem('lucid-entry-count')||'0')});
+    localStorage.setItem('lucid-analysis-history',JSON.stringify(analysisHistory));
     localStorage.setItem('lucid-analysis-result',text);
-    localStorage.setItem('lucid-analysis-date',new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'}));
+    localStorage.setItem('lucid-analysis-date',nowDate);
     localStorage.setItem('lucid-analysis-date-iso',new Date().toISOString());
     localStorage.setItem('lucid-analysis-entry-count',localStorage.getItem('lucid-entry-count')||'0');
+    renderReport();
     const rap=document.getElementById('reanalysis-prompt');
     if(rap) rap.style.display='none';
   } catch(e){
