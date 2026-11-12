@@ -11,7 +11,6 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Lucid</title>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://js.paystack.co/v1/inline.js"></script>
 <style>
 :root {
   --teal-light: #F0F8F6;
@@ -958,6 +957,11 @@ body {
       <br>
       <button onclick="unlockWithCode()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Use access code</button>
     </div>
+    <div style="margin-top:18px;font-size:11px;line-height:2.2;color:var(--text-light)">
+      <a href="/privacy.html" target="_blank" rel="noopener" style="color:var(--text-light)">Privacy policy</a> ·
+      <a href="https://signalandseed.co.za/policies/" target="_blank" rel="noopener" style="color:var(--text-light)">Pricing, refunds and contact</a><br>
+      <a href="#" onclick="withdrawAnalysisConsent();return false" style="color:var(--text-light)">Withdraw analysis consent</a>
+    </div>
   </div>
 </div>
 <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center">
@@ -980,9 +984,26 @@ body {
         <div style="font-size:24px;font-weight:300;color:var(--dawn-dark);font-family:var(--font-serif)">R149</div>
       </div>
     </div>
+    <input class="input-field" id="unlock-email" type="email" inputmode="email" autocomplete="email" placeholder="Your email, for the receipt" style="margin-bottom:6px">
+    <div style="font-size:11px;color:var(--text-light);line-height:1.5;margin-bottom:12px">Sent to Paystack for your receipt and any refund. Lucid does not store it.</div>
     <button class="btn-dawn" onclick="confirmUnlock()" style="margin-bottom:10px">Unlock now — R149</button>
     <button class="btn-secondary" onclick="closeModal()" style="margin-bottom:0">Not now</button>
-    <div style="font-size:11px;color:var(--text-light);text-align:center;margin-top:10px;line-height:1.5">Secured by Paystack. Card details are never stored by Lucid.</div>
+    <div style="font-size:11px;color:var(--text-light);text-align:center;margin-top:10px;line-height:1.5">Secured by Paystack. Card details are never stored by Lucid. <a href="https://signalandseed.co.za/policies/" target="_blank" rel="noopener" style="color:var(--text-light)">Refunds and terms</a></div>
+  </div>
+</div>
+
+<div id="consent-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:310;align-items:flex-end;justify-content:center">
+  <div style="background:var(--warm-white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding:1.75rem 1.5rem 2rem;width:100%;max-width:430px;max-height:92vh;overflow-y:auto">
+    <div style="width:36px;height:4px;background:var(--warm-white-2);border-radius:2px;margin:0 auto 1.25rem"></div>
+    <div style="font-size:15px;font-weight:500;color:var(--text-dark);margin-bottom:.6rem">Before your first analysis</div>
+    <div style="font-size:13px;color:var(--text-mid);line-height:1.7">
+      <p style="margin:0 0 .7rem">To write your analysis, Lucid sends a summary of your logged data to Anthropic, which runs the AI model, through our server. This is health information.</p>
+      <p style="margin:0 0 .7rem">The summary holds your age range, biological sex, how long you have had migraines, your triggers and history notes, your supplements and medications, and figures and dates from your logs. It does not hold your name or email address.</p>
+      <p style="margin:0 0 .7rem">Anthropic processes it outside South Africa, including in the United States, and keeps it for a limited time: 30 days under its standard terms. We do not keep it. Your entries stay on this device, and nothing is sent unless you run an analysis.</p>
+      <p style="margin:0 0 1.1rem">You can withdraw your consent at any time in Settings. <a href="/privacy.html" target="_blank" rel="noopener" style="color:var(--teal-dark)">Read the privacy policy</a></p>
+    </div>
+    <button class="btn-dawn" onclick="acceptAnalysisConsent()" style="margin-bottom:10px">I agree. Run the analysis</button>
+    <button class="btn-secondary" onclick="declineAnalysisConsent()" style="margin-bottom:0">Not now</button>
   </div>
 </div>
 
@@ -1151,7 +1172,9 @@ function fetchPressure(){
   if(pa) pa.textContent='';
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&hourly=surface_pressure&forecast_days=1`)
+      // Rounded to 2 decimals (about 1 km) before anything leaves the device
+      const lat=pos.coords.latitude.toFixed(2), lon=pos.coords.longitude.toFixed(2);
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=surface_pressure&forecast_days=1`)
       .then(r=>r.json()).then(data=>{
         if(data.hourly&&data.hourly.surface_pressure){
           const vals=data.hourly.surface_pressure.filter((_,i)=>i%3===0).slice(0,7);
@@ -1181,7 +1204,7 @@ function fetchPressure(){
       }).catch(()=>{
         if(pn) pn.textContent='Pressure data unavailable';
       });
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
       .then(r=>r.json()).then(data=>{
         const town=data.address?.town||data.address?.city||data.address?.village||'';
         if(pl&&town) pl.textContent='Barometric pressure — '+town;
@@ -1769,14 +1792,38 @@ async function unlockWithCode(){
       if(box) box.value='';
       updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
       showToast('Analysis unlocked on this device ✓');
-      launchApp('dash');
-      setTimeout(()=>runAnalysis(),500);
     } else {
       showToast(data.error||'That code did not work');
     }
   } catch(e){
     showToast('Could not check the code — try again when online');
   }
+}
+
+// ---- Consent before health information is sent for analysis ----
+function hasAnalysisConsent(){
+  return !!localStorage.getItem('lucid-analysis-consent');
+}
+function showConsentModal(){
+  const m=document.getElementById('consent-modal');
+  if(m) m.style.display='flex';
+}
+function closeConsentModal(){
+  const m=document.getElementById('consent-modal');
+  if(m) m.style.display='none';
+}
+function acceptAnalysisConsent(){
+  localStorage.setItem('lucid-analysis-consent',new Date().toISOString());
+  closeConsentModal();
+  runAnalysis();
+}
+function declineAnalysisConsent(){
+  closeConsentModal();
+  showToast('No analysis was run. Nothing was sent.');
+}
+function withdrawAnalysisConsent(){
+  localStorage.removeItem('lucid-analysis-consent');
+  showToast('Consent withdrawn. Lucid will ask again before the next analysis.');
 }
 
 function renderDiagnostics(){
@@ -1791,7 +1838,7 @@ function renderDiagnostics(){
 
 // ---- Backup and restore. Works on this device's storage only; nothing is sent anywhere. ----
 // Payment and unlock keys are left out on purpose, in both directions.
-const LUCID_BACKUP_SKIP=['lucid-unlocked','lucid-unlock-ref','lucid-token'];
+const LUCID_BACKUP_SKIP=['lucid-unlocked','lucid-unlock-ref','lucid-token','lucid-analysis-consent'];
 
 function lucidStoredKeys(){
   const keys=[];
@@ -2813,9 +2860,13 @@ function closeModal(){
 }
 
 async function confirmUnlock(){
+  const emailBox=document.getElementById('unlock-email');
+  const email=emailBox?emailBox.value.trim():'';
+  if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showToast('Enter your email address for the receipt');
+    return;
+  }
   closeModal();
-  const profile=JSON.parse(localStorage.getItem("lucid-profile")||"{}");
-  const email=profile.email||"user@lucid.app";
   const ref="lucid_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
   showToast("Connecting to payment…");
   try{
@@ -2866,6 +2917,8 @@ async function verifyAndUnlock(reference){
 }
 
 async function runAnalysis(){
+  // Health information leaves the device only after the person has agreed on this device
+  if(!hasAnalysisConsent()){ showConsentModal(); return; }
   const ar=document.getElementById('analysis-running');
   const ab=document.getElementById('analysis-body');
   const at=document.getElementById('analysis-title');
