@@ -953,6 +953,11 @@ body {
   <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
     <div id="analysis-diagnostics" style="font-size:11px;color:var(--text-light);margin-bottom:10px;line-height:1.6"></div>
     <button onclick="devUnlock()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Restore analysis access</button>
+    <div style="margin-top:14px">
+      <input class="input-field" id="access-code" type="password" autocomplete="off" placeholder="Access code" style="max-width:200px;text-align:center;margin-bottom:8px">
+      <br>
+      <button onclick="unlockWithCode()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Use access code</button>
+    </div>
   </div>
 </div>
 <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center">
@@ -1667,6 +1672,7 @@ function removeSettingsSupp(idx){
 
 
 function resetUnlockForTesting(){
+  localStorage.removeItem('lucid-token');
   localStorage.removeItem('lucid-unlocked');
   localStorage.removeItem('lucid-unlock-ref');
   localStorage.removeItem('lucid-analysis-result');
@@ -1678,13 +1684,19 @@ function resetUnlockForTesting(){
   updateProgress(count);
   showToast('Unlock reset — go to Dashboard to test payment');
 }
-function devUnlock(){
-  localStorage.setItem('lucid-unlocked','true');
-  const count=parseInt(localStorage.getItem('lucid-entry-count')||'0');
-  updateProgress(count);
-  showToast('Analysis access restored — running now…');
-  launchApp('dash');
-  setTimeout(()=>runAnalysis(), 500);
+// The Restore button. It no longer unlocks anything by itself: it re-checks the payment
+// reference stored on this device, and the server has to confirm the payment.
+async function devUnlock(){
+  showToast('Checking your payment…');
+  const ok=await restoreAccessFromPayment();
+  if(ok){
+    updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
+    showToast('Analysis access restored — running now…');
+    launchApp('dash');
+    setTimeout(()=>runAnalysis(), 500);
+  } else {
+    showToast('No payment found on this device. Use an access code, or unlock with a payment.');
+  }
 }
 
 // Checks unlock status, and if the local flag has drifted false despite a
@@ -1692,7 +1704,13 @@ function devUnlock(){
 // repairs the flag — so a missed/cleared flag doesn't silently block the
 // every-20 auto-trigger indefinitely.
 async function ensureUnlocked(){
-  if(localStorage.getItem('lucid-unlocked')==='true') return true;
+  if(localStorage.getItem('lucid-unlocked')==='true' && localStorage.getItem('lucid-token')) return true;
+  return await restoreAccessFromPayment();
+}
+
+// Asks the server to confirm the payment reference stored on this device. On success the
+// server's signed token is stored; the flag alone is never enough.
+async function restoreAccessFromPayment(){
   const ref=localStorage.getItem('lucid-unlock-ref');
   if(!ref) return false;
   try{
@@ -1702,12 +1720,63 @@ async function ensureUnlocked(){
       body:JSON.stringify({reference:ref})
     });
     const data=await res.json();
-    if(res.ok && data.success){
+    if(res.ok && data.success && data.token){
+      localStorage.setItem('lucid-token',data.token);
       localStorage.setItem('lucid-unlocked','true');
       return true;
     }
   } catch(e){}
   return false;
+}
+
+// Runs when the page opens. A device that says "unlocked" but holds no signed token is not
+// unlocked. It gets one if it has a payment reference the server confirms, or it goes back to locked.
+async function reconcileUnlock(){
+  const flag=localStorage.getItem('lucid-unlocked')==='true';
+  const token=localStorage.getItem('lucid-token');
+  if(!flag&&!token) return;
+  if(flag&&token) return;
+  if(!flag&&token){
+    localStorage.setItem('lucid-unlocked','true');
+    updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
+    return;
+  }
+  if(localStorage.getItem('lucid-unlock-ref')){
+    // A payment reference exists: ask the server. If it cannot be reached, leave things as they are.
+    if(await restoreAccessFromPayment()) updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
+    return;
+  }
+  localStorage.removeItem('lucid-unlocked');
+  updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
+}
+
+// The owner's private access code, checked by the server (LUCID_OWNER_CODE in Vercel).
+async function unlockWithCode(){
+  const box=document.getElementById('access-code');
+  const code=box?box.value.trim():'';
+  if(!code){showToast('Enter your access code first');return;}
+  showToast('Checking the code…');
+  try{
+    const res=await fetch('/api/owner-token',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code})
+    });
+    const data=await res.json();
+    if(res.ok && data.success && data.token){
+      localStorage.setItem('lucid-token',data.token);
+      localStorage.setItem('lucid-unlocked','true');
+      if(box) box.value='';
+      updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
+      showToast('Analysis unlocked on this device ✓');
+      launchApp('dash');
+      setTimeout(()=>runAnalysis(),500);
+    } else {
+      showToast(data.error||'That code did not work');
+    }
+  } catch(e){
+    showToast('Could not check the code — try again when online');
+  }
 }
 
 function renderDiagnostics(){
@@ -2775,7 +2844,8 @@ async function verifyAndUnlock(reference){
       body:JSON.stringify({reference})
     });
     const data=await res.json();
-    if(res.ok && data.success){
+    if(res.ok && data.success && data.token){
+      localStorage.setItem('lucid-token',data.token);
       localStorage.setItem('lucid-unlocked','true');
       localStorage.setItem('lucid-unlock-ref',reference);
       showToast('Analysis unlocked ✓');
@@ -2995,7 +3065,7 @@ ${dataSummary}`;
   try{
     const response=await fetch('/api/analyse',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('lucid-token')||'')},
       body:JSON.stringify({prompt})
     });
     const data=await response.json();
@@ -3032,13 +3102,6 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),2400);
 }
 
-// Dev unlock via URL parameter
-if(new URLSearchParams(window.location.search).get('unlock')==='greg'){
-  localStorage.setItem('lucid-unlocked','true');
-  updateProgress(parseInt(localStorage.getItem('lucid-entry-count')||'0'));
-  showToast('Analysis unlocked ✓');
-}
-
 // Paystack redirect return
 (function checkPaystackReturn(){
   const params=new URLSearchParams(window.location.search);
@@ -3048,6 +3111,8 @@ if(new URLSearchParams(window.location.search).get('unlock')==='greg'){
     verifyAndUnlock(ref);
   }
 })();
+
+reconcileUnlock();
 
 const savedCount=parseInt(localStorage.getItem('lucid-entry-count')||'0');
 updateProgress(savedCount);
