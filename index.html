@@ -939,6 +939,17 @@ body {
   </div>
 
   <button class="btn-primary" onclick="saveSettings()">Save settings</button>
+
+  <div class="section-label">Back up your entries</div>
+  <div class="section-note">Your entries are stored only on this device. Save a copy now and then. The file holds your health entries, so keep it somewhere private. Payment access is not part of the backup.</div>
+  <div class="card">
+    <button class="btn-secondary" onclick="exportMyData()">Save a backup file</button>
+    <button class="btn-secondary" onclick="copyMyData()">Copy backup as text</button>
+    <div style="font-size:12px;color:var(--text-light);margin:.9rem 0 .4rem">Restore from a backup</div>
+    <input type="file" id="restore-file" accept=".json,.txt,application/json,text/plain" onchange="readBackupFile(this)" style="font-size:12px;margin-bottom:8px;max-width:100%">
+    <textarea class="textarea-field" id="restore-text" rows="3" placeholder="Choose a backup file, or paste the backup text here"></textarea>
+    <button class="btn-secondary" style="margin-top:8px" onclick="restoreMyData()">Restore from this backup</button>
+  </div>
   <div style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center">
     <div id="analysis-diagnostics" style="font-size:11px;color:var(--text-light);margin-bottom:10px;line-height:1.6"></div>
     <button onclick="devUnlock()" style="padding:8px 16px;border:1px solid var(--border);background:none;border-radius:var(--radius-sm);font-size:11px;color:var(--text-light);cursor:pointer;font-family:var(--font-sans)">Restore analysis access</button>
@@ -1707,6 +1718,170 @@ function renderDiagnostics(){
   const lastCount=localStorage.getItem('lucid-analysis-entry-count')||'none yet';
   const lastDate=localStorage.getItem('lucid-analysis-date')||'never';
   el.textContent='Entries: '+count+' · Unlocked: '+(unlocked?'yes':'no')+' · Last analysis at entry: '+lastCount+' · Last analysis date: '+lastDate;
+}
+
+// ---- Backup and restore. Works on this device's storage only; nothing is sent anywhere. ----
+// Payment and unlock keys are left out on purpose, in both directions.
+const LUCID_BACKUP_SKIP=['lucid-unlocked','lucid-unlock-ref','lucid-token'];
+
+function lucidStoredKeys(){
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith('lucid-')&&!LUCID_BACKUP_SKIP.includes(k)) keys.push(k);
+  }
+  return keys;
+}
+
+function lucidCollectBackup(){
+  const data={};
+  lucidStoredKeys().forEach(k=>{data[k]=localStorage.getItem(k);});
+  return {app:'lucid',version:1,exported:new Date().toISOString(),data};
+}
+
+function lucidBackupSummary(data){
+  let logs=0;
+  Object.keys(data).forEach(k=>{if(k.startsWith('lucid-log-')) logs++;});
+  let episodes=0;
+  try{
+    const a=JSON.parse(data['lucid-episodes']||'[]');
+    episodes=Array.isArray(a)?a.length:0;
+  }catch(e){}
+  return {logs,episodes};
+}
+
+// Plain text, not .json: iPhones will share a text file to Files or Mail more reliably.
+async function exportMyData(){
+  try{
+    const backup=lucidCollectBackup();
+    const s=lucidBackupSummary(backup.data);
+    const stamp=new Date().toISOString().slice(0,10);
+    const file=new File([JSON.stringify(backup)],'Lucid-backup-'+stamp+'.txt',{type:'text/plain'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{
+        await navigator.share({files:[file],title:'Lucid backup'});
+        showToast('Backup ready — '+s.logs+' daily entries');
+        return;
+      }catch(err){
+        if(err&&err.name==='AbortError') return;   // sheet closed, nothing saved
+      }
+    }
+    savePdfFile(file);                               // generic file download
+    showToast('Backup saved — '+s.logs+' daily entries');
+  }catch(e){
+    showToast('Could not make the file — try Copy backup as text');
+  }
+}
+
+async function copyMyData(){
+  const text=JSON.stringify(lucidCollectBackup());
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast('Backup copied — paste it into a note or email');
+  }catch(e){
+    const box=document.getElementById('restore-text');
+    if(box){box.value=text;box.focus();box.select();}
+    showToast('Copy the text in the box below by hand');
+  }
+}
+
+function readBackupFile(input){
+  const f=input&&input.files&&input.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const box=document.getElementById('restore-text');
+    if(box) box.value=String(r.result||'');
+    showToast('File loaded — tap Restore to continue');
+  };
+  r.onerror=()=>showToast('Could not read that file');
+  r.readAsText(f);
+}
+
+// Checks the text is a Lucid backup. Returns the keys it would restore; changes nothing.
+function lucidApplyBackup(text){
+  let obj;
+  try{obj=JSON.parse(String(text||'').trim());}
+  catch(e){return {ok:false,error:'That is not a Lucid backup.'};}
+  if(!obj||obj.app!=='lucid'||!obj.data||typeof obj.data!=='object'||Array.isArray(obj.data)){
+    return {ok:false,error:'That is not a Lucid backup.'};
+  }
+  const incoming={};
+  for(const k of Object.keys(obj.data)){
+    if(!k.startsWith('lucid-')||LUCID_BACKUP_SKIP.includes(k)) continue;
+    if(typeof obj.data[k]!=='string') return {ok:false,error:'The backup is damaged.'};
+    incoming[k]=obj.data[k];
+  }
+  if(!Object.keys(incoming).length) return {ok:false,error:'The backup is empty.'};
+  return {ok:true,incoming};
+}
+
+// Swaps this device's entries for the backup, in two phases.
+// Phase 1 stages the backup beside the existing entries and deletes nothing. If the
+// device has no room, it stops there and the existing entries are untouched.
+// Phase 2 swaps. If that fails, the old entries are put back; as a last resort the
+// caller is handed them as text to copy.
+const LUCID_TMP='restore-tmp:';
+function lucidClearTmp(){
+  const dead=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&k.startsWith(LUCID_TMP)) dead.push(k);
+  }
+  dead.forEach(k=>{try{localStorage.removeItem(k);}catch(_){}});
+}
+function lucidReplaceStorage(incoming){
+  lucidClearTmp();
+  const prev={};
+  lucidStoredKeys().forEach(k=>{prev[k]=localStorage.getItem(k);});
+  const keys=Object.keys(incoming);
+  try{
+    keys.forEach(k=>localStorage.setItem(LUCID_TMP+k,incoming[k]));
+  }catch(e){
+    lucidClearTmp();
+    return {ok:false,changed:false,reason:'room'};
+  }
+  try{
+    Object.keys(prev).forEach(k=>localStorage.removeItem(k));
+    keys.forEach(k=>{localStorage.setItem(k,incoming[k]);localStorage.removeItem(LUCID_TMP+k);});
+    lucidClearTmp();
+    return {ok:true};
+  }catch(e){
+    try{
+      keys.forEach(k=>localStorage.removeItem(k));
+      Object.keys(prev).forEach(k=>localStorage.setItem(k,prev[k]));
+      lucidClearTmp();
+      return {ok:false,changed:false,reason:'swap'};
+    }catch(e2){
+      return {ok:false,changed:true,prev};
+    }
+  }
+}
+
+function restoreMyData(){
+  const box=document.getElementById('restore-text');
+  const res=lucidApplyBackup(box?box.value:'');
+  if(!res.ok){showToast(res.error);return;}
+  const here={};
+  lucidStoredKeys().forEach(k=>{here[k]=localStorage.getItem(k);});
+  const now=lucidBackupSummary(here);
+  const inc=lucidBackupSummary(res.incoming);
+  const msg='This backup has '+inc.logs+' daily entries and '+inc.episodes+' episodes.\n'
+    +'This device has '+now.logs+' daily entries and '+now.episodes+' episodes.\n\n'
+    +'Restoring replaces what is on this device with the backup. Continue?';
+  if(!confirm(msg)) return;
+  const r=lucidReplaceStorage(res.incoming);
+  if(r.ok){
+    showToast('Restored — reloading');
+    setTimeout(()=>location.reload(),700);
+  } else if(!r.changed){
+    showToast(r.reason==='room'
+      ?'Not enough room on this device to restore safely. Your entries were left as they were.'
+      :'Could not restore. Your entries were left as they were.');
+  } else {
+    if(box) box.value=JSON.stringify({app:'lucid',version:1,exported:new Date().toISOString(),data:r.prev});
+    showToast('Restore failed. Copy the text in the box now: it holds your previous entries.');
+  }
 }
 
 function saveSettings(){
